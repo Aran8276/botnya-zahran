@@ -2,4 +2,4 @@ version: "3.8"
 
 services:
   bot-server:
-    build: /bot-server
+    build: ./bot-server
