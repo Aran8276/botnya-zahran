@@ -3,3 +3,7 @@ version: "3.8"
 services:
   bot-server:
     build: ./bot-server
+  frontend-web:
+    build: ./frontend-web
+    ports:
+      - "84:3000"

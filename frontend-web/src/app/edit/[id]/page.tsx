@@ -16,25 +16,109 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
-import { use } from "react";
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  FormInputs,
+  laravelUrl,
+  requestHeader,
+} from "@/components/GlobalValues";
+import axios, { AxiosError } from "axios";
 
 const formSchema = z.object({
   case: z.string().nonempty("Perintah tidak boleh kosong"),
   reply: z.string().nonempty("Pesan jawaban tidak boleh kosong"),
 });
 
+export interface GetResponse {
+  success: boolean;
+  msg: string;
+  response: Response;
+  status: number;
+}
+
+export interface Response {
+  id: string;
+  case: string;
+  reply: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface Response {
+  success: boolean;
+  msg: string;
+  id: string;
+  callback: Callback;
+  status: number;
+}
+
+export interface Callback {
+  case: string;
+  reply: string;
+}
+
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const [error, setError] = useState("");
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      case: "!hello",
-      reply: "Ini adalah pesan Hello World!",
+      case: "",
+      reply: "",
     },
   });
+
+  const fetchInputs = async () => {
+    try {
+      const res = await axios.get(
+        `${laravelUrl}/api/responses/response/${id}`,
+        requestHeader()
+      );
+      const data: GetResponse = res.data;
+      if (data.success) {
+        form.reset({
+          case: data.response.case,
+          reply: data.response.reply,
+        });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.log(error.message);
+      }
+    }
+  };
+
+  const postData = async (formData: FormInputs) => {
+    try {
+      const res = await axios.put(
+        `${laravelUrl}/api/responses/response/${id}`,
+        formData,
+        requestHeader()
+      );
+      const data: Response = res.data;
+      if (!data.success) {
+        setError("Gagal mengedit data");
+        return;
+      }
+      router.replace("/");
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.log(error.message);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchInputs();
+  }, []);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       console.log(values);
+      postData(values);
       toast(
         <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
           <code className="text-white">{JSON.stringify(values, null, 2)}</code>
@@ -95,6 +179,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             </FormItem>
           )}
         />
+        <div>
+          {error ? (
+            <span className="text-red-500 text-sm">{error}</span>
+          ) : (
+            <></>
+          )}
+        </div>
+
         <div className="flex space-x-3">
           <Button type="submit">Editkan</Button>
           <Link href="/">

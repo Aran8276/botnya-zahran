@@ -16,6 +16,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
+import axios, { AxiosError } from "axios";
+import {
+  FormInputs,
+  laravelUrl,
+  requestHeader,
+} from "@/components/GlobalValues";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export interface Response {
+  success: boolean;
+  msg: string;
+  callback: Callback;
+  status: number;
+}
+
+export interface Callback {
+  id: string;
+  case: string;
+  reply: string;
+}
 
 const formSchema = z.object({
   case: z.string().nonempty("Perintah tidak boleh kosong"),
@@ -23,6 +44,8 @@ const formSchema = z.object({
 });
 
 export default function Page() {
+  const [error, setError] = useState("");
+  const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -31,14 +54,30 @@ export default function Page() {
     },
   });
 
+  const postData = async (formData: FormInputs) => {
+    try {
+      const res = await axios.post(
+        `${laravelUrl}/api/responses/create`,
+        formData,
+        requestHeader()
+      );
+      const data: Response = res.data;
+      if (!data.success) {
+        setError("Gagal menambahkan data");
+        return;
+      }
+      router.replace("/");
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.log(error.message);
+      }
+    }
+  };
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       console.log(values);
-      toast(
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      );
+      postData(values);
     } catch (error) {
       console.error("Form submission error", error);
       toast.error("Failed to submit the form. Please try again.");
@@ -93,6 +132,13 @@ export default function Page() {
             </FormItem>
           )}
         />
+        <div>
+          {error ? (
+            <span className="text-red-500 text-sm">{error}</span>
+          ) : (
+            <></>
+          )}
+        </div>
         <div className="flex space-x-3">
           <Button type="submit">Tambahkan</Button>
           <Link href="/">

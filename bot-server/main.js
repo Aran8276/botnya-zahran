@@ -139,7 +139,7 @@ client.on("message_create", async (message) => {
       } catch (error) {
         console.error("Error fetching cat image:", error);
         message.reply(
-          "Error fetching cat image: " + error.message + error.response.data
+          "Gagal memuat gambar dari API, silahkan lihat log di https://portainer.aran8276.site/ dan login sebagai admin.1"
         );
       }
       break;
