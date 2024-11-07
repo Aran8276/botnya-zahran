@@ -20,6 +20,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+Route::get('/public-responses', [ResponseController::class, 'getResponses']);
 
 Route::group([
     'middleware' => 'api',

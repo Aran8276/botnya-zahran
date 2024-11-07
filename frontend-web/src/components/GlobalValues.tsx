@@ -1,15 +1,20 @@
 export const laravelUrl = process.env.NEXT_PUBLIC_LARAVEL_URL;
 
-export const laravelAccessToken = window.localStorage.getItem(
-  "laravel_access_token"
-);
+export const laravelAccessToken =
+  typeof window !== "undefined"
+    ? window.localStorage.getItem("laravel_access_token")
+    : null;
 
 export const setLaravelAccessToken = (value: string) => {
-  window.localStorage.setItem("laravel_access_token", value);
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem("laravel_access_token", value);
+  }
 };
 
 export const deleteLaravelAccessToken = () => {
-  window.localStorage.removeItem("laravel_access_token");
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem("laravel_access_token");
+  }
 };
 
 export const requestHeader = () => {
@@ -21,12 +26,17 @@ export const requestHeader = () => {
   const loggedIn = {
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${window.localStorage.getItem(
-        "laravel_access_token"
-      )}`,
+      Authorization: `Bearer ${
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("laravel_access_token")
+          : ""
+      }`,
     },
   };
-  if (window.localStorage.getItem("laravel_access_token")) {
+  if (
+    typeof window !== "undefined" &&
+    window.localStorage.getItem("laravel_access_token")
+  ) {
     return loggedIn;
   }
   return anonymous;

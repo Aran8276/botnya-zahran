@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const { default: axios } = require("axios");
@@ -97,6 +99,11 @@ client.on("ready", () => {
 });
 
 client.on("message_create", async (message) => {
+  const regex = /^!\w+/;
+  const isPossibleCommand = regex.test(message.body);
+  if (!isPossibleCommand) {
+    return;
+  }
   switch (message.body) {
     case "!piket":
       const startDate = new Date("2024-11-04");
@@ -107,7 +114,7 @@ client.on("message_create", async (message) => {
       break;
     case "!help":
       message.reply(
-        `🌟 **Daftar Perintah** 🌟\n*!piket* - Lihat Jadwal Piket 🧹.\n*!ping* - Uji respons bot dengan balasan "pong" 🏓 klasik.\n*!bro* - Reaksi dengan 💀.\n*!pin* - Pin pesan selama 10 detik. 📌\n*!toyota* - Terima gambar keren dari mobil Toyota. 🚗\n*!cat* - Terima gambar random kucing dari API 🐱\n*!star* - Tandai pesan dengan bintang. ⭐\nPowered by https://wwebjs.dev/\nWritten by Aran8276`
+        `🌟 **Daftar Perintah** 🌟\n*!piket* - Lihat Jadwal Piket 🧹.\n*!ping* - Uji respons bot dengan balasan "pong" 🏓 klasik.\n*!bro* - Reaksi dengan 💀.\n*!pin* - Pin pesan selama 10 detik. 📌\n*!toyota* - Terima gambar keren dari mobil Toyota. 🚗\n*!cat* - Terima gambar random kucing dari API 🐱\n*!star* - Tandai pesan dengan bintang. ⭐\nWritten by Aran8276`
       );
       break;
     case "!ping":
@@ -139,17 +146,33 @@ client.on("message_create", async (message) => {
       } catch (error) {
         console.error("Error fetching cat image:", error);
         message.reply(
-          "Gagal memuat gambar dari API, silahkan lihat log di https://portainer.aran8276.site/ dan login sebagai admin.1"
+          "Gagal memuat gambar dari API, silahkan lihat log di https://portainer.aran8276.site/ dan login sebagai admin."
         );
       }
       break;
     default:
-      const customResponses = require("./custom-responses");
-      const customResponse = customResponses.find(
-        (response) => response.case === message.body
-      );
-      if (customResponse) {
-        message.reply(customResponse.reply);
+      try {
+        const response = await axios.get(
+          `${process.env.LARAVEL_URL}/api/public-responses`
+        );
+        if (response.data.success) {
+          const customResponses = response.data.responses;
+          const customResponse = customResponses.find(
+            (response) => response.case === message.body
+          );
+          if (customResponse) {
+            message.reply(customResponse.reply);
+          } else {
+            message.reply(
+              "Perintah ini tidak ditemukan untuk ini.\n\nKetik `!help` untuk lihat daftar (bot aktif)."
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching custom responses:", error);
+        message.reply(
+          "Perintah tidak ditemukan:\n\nGagal memuat daftar perintah custom dari API (apakah API down?)."
+        );
       }
       break;
   }
