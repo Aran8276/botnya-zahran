@@ -20,6 +20,18 @@ import {
   requestHeader,
 } from "@/components/GlobalValues";
 import { toast } from "sonner";
+import LoadingSpinner from "@/components/spinner";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Trash2 } from "lucide-react";
 
 export interface LogoutResponse {
   success: boolean;
@@ -73,6 +85,7 @@ export default function Home() {
   };
 
   const fetchData = async () => {
+    setLoaded(false);
     try {
       const res = await axios.get(
         `${laravelUrl}/api/responses/responses`,
@@ -83,36 +96,33 @@ export default function Home() {
     } catch (error) {
       if (error instanceof AxiosError) {
         console.log(error.message);
+        if (error.status == 401) {
+          deleteLaravelAccessToken();
+          window.location.href = "/login";
+        }
       }
+    } finally {
+      setLoaded(true);
     }
   };
 
   const logout = async () => {
     try {
-      const res = await axios.get(
-        `${laravelUrl}/api/auth/logout`,
-        requestHeader()
-      );
-      const data: LogoutResponse = res.data;
-
-      if (!data.success) {
-        toast("Failed to logout");
-        return;
-      }
-
+      await axios.get(`${laravelUrl}/api/auth/logout`, requestHeader());
       deleteLaravelAccessToken();
       window.location.href = "/login";
     } catch (error) {
       if (error instanceof AxiosError) {
         console.log(error.message);
       }
+      deleteLaravelAccessToken();
+      window.location.href = "/login";
     }
   };
 
   useEffect(() => {
     if (laravelAccessToken) {
       fetchData();
-      setLoaded(true);
       return;
     }
     window.location.href = "/login";
@@ -121,20 +131,22 @@ export default function Home() {
   return (
     <>
       {loaded ? (
-        <div className="space-y-8 max-w-3xl mx-auto py-10">
+        <div className="space-y-8 max-w-3xl mx-6 lg:mx-auto py-10">
           <div className="flex justify-center text-center">
             <h2 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">
               Daftar Perintah WhatsApp Bot
             </h2>
           </div>
           <Table>
-            <TableCaption className="space-x-3 py-6">
-              <Link href="/tambah">
-                <Button>Tambah Perintah</Button>
-              </Link>
-              <Button variant="secondary" onClick={logout}>
-                Logout
-              </Button>
+            <TableCaption>
+              <div className="flex flex-col space-y-4 lg:flex-row lg:space-x-3 lg:w-full lg:justify-center lg:space-y-0 py-6">
+                <Link className="w-full lg:w-auto" href="/tambah">
+                  <Button className="w-full">Tambah Perintah</Button>
+                </Link>
+                <Button variant="secondary" onClick={logout}>
+                  Logout
+                </Button>
+              </div>
             </TableCaption>
             <TableHeader>
               <TableRow>
@@ -159,12 +171,35 @@ export default function Home() {
                       <Link href={`/edit/${item.id}`}>
                         <Button variant="secondary">Edit</Button>
                       </Link>
-                      <Button
-                        onClick={() => deleteData(item.id)}
-                        variant="destructive"
-                      >
-                        Hapus
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="destructive">Hapus</Button>
+                        </DialogTrigger>
+                        <DialogContent className="rounded-xl lg:mx-auto lg:w-auto">
+                          <DialogHeader>
+                            <DialogTitle>Apakah anda yakin?</DialogTitle>
+                            <DialogDescription className="py-4">
+                              Permintaan ini tidak bisa di kembalikan (alias di
+                              undo), data anda akan selamanya dihapus. Apakah
+                              anda yakin?
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <div className="flex space-x-3">
+                              <Button
+                                onClick={() => deleteData(item.id)}
+                                variant="destructive"
+                              >
+                                <Trash2 />
+                                <span>Hapus</span>
+                              </Button>
+                              <DialogClose asChild>
+                                <Button variant="outline">Tutup</Button>
+                              </DialogClose>
+                            </div>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </TableCell>
                   </TableRow>
                 );
@@ -173,7 +208,9 @@ export default function Home() {
           </Table>
         </div>
       ) : (
-        <></>
+        <div className="flex justify-center items-center h-screen scale-[2.25]">
+          <LoadingSpinner />
+        </div>
       )}
     </>
   );

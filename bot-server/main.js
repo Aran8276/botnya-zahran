@@ -114,7 +114,9 @@ client.on("message_create", async (message) => {
       break;
     case "!help":
       message.reply(
-        `🌟 **Daftar Perintah** 🌟\n*!piket* - Lihat Jadwal Piket 🧹.\n*!ping* - Uji respons bot dengan balasan "pong" 🏓 klasik.\n*!bro* - Reaksi dengan 💀.\n*!pin* - Pin pesan selama 10 detik. 📌\n*!toyota* - Terima gambar keren dari mobil Toyota. 🚗\n*!cat* - Terima gambar random kucing dari API 🐱\n*!star* - Tandai pesan dengan bintang. ⭐\nWritten by Aran8276`
+        `🌟 **Daftar Perintah** 🌟\n*!piket* - Lihat Jadwal Piket 🧹.\n*!ping* - Uji respons bot dengan balasan "pong" 🏓 klasik.\n*!bro* - Reaksi dengan 💀.\n*!pin* - Pin pesan selama 10 detik. 📌\n*!toyota* - Terima gambar keren dari mobil Toyota. 🚗\n*!cat* - Terima gambar random kucing dari API. 🐱\n*!star* - Tandai pesan dengan bintang. ⭐\n*!login* Masuk dan tambahkan perintah bot baru. 🔧` +
+          "" +
+          "\n\nWritten by Aran8276"
       );
       break;
     case "!ping":
@@ -127,10 +129,14 @@ client.on("message_create", async (message) => {
       message.pin(10);
       break;
     case "!toyota":
-      const media = await MessageMedia.fromUrl(
-        "https://platform.cstatic-images.com/large/in/v2/stock_photos/941643fc-5200-45f4-8368-4505e79ec7c4/db3d4c61-ec9a-45b8-a099-686fb28fbf90.png"
-      );
-      message.reply(media);
+      try {
+        const media = await MessageMedia.fromUrl(
+          `${process.env.LARAVEL_URL}/toyota.png`
+        );
+        message.reply(media);
+      } catch (error) {
+        "Gagal memuat gambar: \n" + JSON.stringify(error, null, 2);
+      }
       break;
     case "!star":
       message.star();
@@ -144,9 +150,9 @@ client.on("message_create", async (message) => {
         const media = await MessageMedia.fromUrl(url);
         message.reply(media);
       } catch (error) {
-        console.error("Error fetching cat image:", error);
+        console.error("Gagal memuat gambar dari API:", error);
         message.reply(
-          "Gagal memuat gambar dari API, silahkan lihat log di https://portainer.aran8276.site/ dan login sebagai admin."
+          "Gagal memuat gambar dari API: \n" + JSON.stringify(error, null, 2)
         );
       }
       break;
@@ -164,14 +170,15 @@ client.on("message_create", async (message) => {
             message.reply(customResponse.reply);
           } else {
             message.reply(
-              "Perintah ini tidak ditemukan untuk ini.\n\nKetik `!help` untuk lihat daftar (bot aktif)."
+              "Perintah ini tidak ditemukan.\n\nKetik `!help` untuk lihat daftar atau tambahkan perintah baru melalui login `!login`."
             );
           }
         }
       } catch (error) {
         console.error("Error fetching custom responses:", error);
         message.reply(
-          "Perintah tidak ditemukan:\n\nGagal memuat daftar perintah custom dari API (apakah API down?)."
+          "Perintah tidak ditemukan:\n\nGagal memuat daftar perintah custom dari API (apakah API down?): \n" +
+            JSON.stringify(error, null, 2)
         );
       }
       break;

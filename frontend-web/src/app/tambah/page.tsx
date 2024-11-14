@@ -24,6 +24,7 @@ import {
 } from "@/components/GlobalValues";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import LoadingSpinner from "@/components/spinner";
 
 export interface Response {
   success: boolean;
@@ -44,6 +45,7 @@ const formSchema = z.object({
 });
 
 export default function Page() {
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -55,6 +57,7 @@ export default function Page() {
   });
 
   const postData = async (formData: FormInputs) => {
+    setIsLoading(true);
     try {
       const res = await axios.post(
         `${laravelUrl}/api/responses/create`,
@@ -71,6 +74,8 @@ export default function Page() {
       if (error instanceof AxiosError) {
         console.log(error.message);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -88,7 +93,7 @@ export default function Page() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8 max-w-3xl mx-auto py-10"
+        className="space-y-8 max-w-3xl mx-6 lg:mx-auto py-10"
       >
         <div className="flex justify-center text-center">
           <h2 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">
@@ -140,7 +145,14 @@ export default function Page() {
           )}
         </div>
         <div className="flex space-x-3">
-          <Button type="submit">Tambahkan</Button>
+          {isLoading ? (
+            <Button disabled>
+              <LoadingSpinner />
+            </Button>
+          ) : (
+            <Button type="submit">Tambahkan</Button>
+          )}
+
           <Link href="/">
             <Button variant="outline" type="button">
               Kembali

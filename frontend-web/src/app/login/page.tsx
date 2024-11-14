@@ -5,6 +5,7 @@ import {
   requestHeader,
   setLaravelAccessToken,
 } from "@/components/GlobalValues";
+import LoadingSpinner from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,7 +30,9 @@ export interface Login {
 
 export default function Page() {
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
       const res = await axios.post(
         `${laravelUrl}/api/auth/login`,
@@ -50,6 +53,8 @@ export default function Page() {
       if (error instanceof AxiosError) {
         setError(error.response?.data.msg);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -71,7 +76,7 @@ export default function Page() {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
+    <div className="flex justify-center items-center h-screen mx-6 lg:mx-0">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Masuk</CardTitle>
@@ -102,9 +107,15 @@ export default function Page() {
             ) : (
               <></>
             )}
-            <Button type="submit" className="w-full">
-              Masuk
-            </Button>
+            {isLoading ? (
+              <Button disabled className="w-full">
+                <LoadingSpinner />
+              </Button>
+            ) : (
+              <Button type="submit" className="w-full">
+                Masuk
+              </Button>
+            )}
           </form>
           <div className="mt-4 text-center text-sm">
             Registrasi akun sementara ini di nonaktifkan.

@@ -19,14 +19,15 @@ class AuthController extends Controller
         ];
 
         $login = Auth::attempt($credentials);
-        if ($login) {
-            return $this->respondWithToken($login);
+        if (!$login) {
+            return response()->json([
+                "success" => false,
+                "msg" => "Email atau password salah",
+                "status" => 401,
+            ], 401);
         }
-        return response()->json([
-            "success" => false,
-            "msg" => "Failed to login",
-            "status" => 401,
-        ]);
+
+        return $this->respondWithToken($login);
     }
 
     public function register(Request $request)
@@ -43,7 +44,7 @@ class AuthController extends Controller
                 "msg" => "Register failed",
                 "error" => $validator->errors(),
                 "status" => 400,
-            ]);
+            ], 400);
         }
         $valid_data = [
             'name' => $data['name'],
@@ -60,8 +61,15 @@ class AuthController extends Controller
 
     public function logout()
     {
-        Auth::logout();
+        $logout = Auth::logout();
 
+        if (!$logout) {
+            return response()->json([
+                "success" => false,
+                "status" => 400,
+                "msg" => 'Failed to log out'
+            ], 400);
+        }
         return response()->json([
             "success" => true,
             "status" => 200,

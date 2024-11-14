@@ -24,6 +24,7 @@ import {
   requestHeader,
 } from "@/components/GlobalValues";
 import axios, { AxiosError } from "axios";
+import LoadingSpinner from "@/components/spinner";
 
 const formSchema = z.object({
   case: z.string().nonempty("Perintah tidak boleh kosong"),
@@ -59,6 +60,8 @@ export interface Callback {
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const [loaded, setLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -71,6 +74,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   });
 
   const fetchInputs = async () => {
+    setLoaded(false);
     try {
       const res = await axios.get(
         `${laravelUrl}/api/responses/response/${id}`,
@@ -88,10 +92,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       if (error instanceof AxiosError) {
         console.log(error.message);
       }
+    } finally {
+      setLoaded(true);
     }
   };
 
   const postData = async (formData: FormInputs) => {
+    setIsLoading(true);
     try {
       const res = await axios.put(
         `${laravelUrl}/api/responses/response/${id}`,
@@ -108,6 +115,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       if (error instanceof AxiosError) {
         console.log(error.message);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -132,70 +141,84 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
   const { id } = use(params);
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8 max-w-3xl mx-auto py-10"
-      >
-        <div className="flex justify-center text-center">
-          <h2 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-            Form Edit Input WhatsApp Bot {id}
-          </h2>
-        </div>
-        <FormField
-          control={form.control}
-          name="case"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Perintah</FormLabel>
-              <FormControl>
-                <Input placeholder="!hello" type="text" {...field} />
-              </FormControl>
-              <FormDescription>
-                Perintah yang akan dicari atau didengar oleh bot.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="reply"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Pesan Jawaban</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Ini adalah pesan Hello World!"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Pesan yang akan dikirim oleh bot setelah menemukan perintah
-                tersebut.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div>
-          {error ? (
-            <span className="text-red-500 text-sm">{error}</span>
-          ) : (
-            <></>
-          )}
-        </div>
+    <>
+      {loaded ? (
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-8 max-w-3xl mx-6 lg:mx-auto py-10"
+          >
+            <div className="flex justify-center text-center">
+              <h2 className="scroll-m-20 pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+                Form Edit Input WhatsApp Bot {id}
+              </h2>
+            </div>
+            <FormField
+              control={form.control}
+              name="case"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Perintah</FormLabel>
+                  <FormControl>
+                    <Input placeholder="!hello" type="text" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Perintah yang akan dicari atau didengar oleh bot.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="reply"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pesan Jawaban</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Ini adalah pesan Hello World!"
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Pesan yang akan dikirim oleh bot setelah menemukan perintah
+                    tersebut.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div>
+              {error ? (
+                <span className="text-red-500 text-sm">{error}</span>
+              ) : (
+                <></>
+              )}
+            </div>
 
-        <div className="flex space-x-3">
-          <Button type="submit">Editkan</Button>
-          <Link href="/">
-            <Button variant="outline" type="button">
-              Kembali
-            </Button>
-          </Link>
+            <div className="flex space-x-3">
+              {isLoading ? (
+                <Button disabled>
+                  <LoadingSpinner />
+                </Button>
+              ) : (
+                <Button type="submit">Editkan</Button>
+              )}
+              <Link href="/">
+                <Button variant="outline" type="button">
+                  Kembali
+                </Button>
+              </Link>
+            </div>
+          </form>
+        </Form>
+      ) : (
+        <div className="flex justify-center items-center h-screen scale-[2.25]">
+          <LoadingSpinner />
         </div>
-      </form>
-    </Form>
+      )}
+    </>
   );
 }
