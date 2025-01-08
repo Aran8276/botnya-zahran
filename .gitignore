@@ -25,3 +25,4 @@
 
 /bot-server/data.js
 /bot-server/node_modules
+/bot-server/.env
