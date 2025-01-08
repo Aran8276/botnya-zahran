@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 
 interface SelfProps {
   isForPage?: boolean;
+  className?: string;
 }
 
 export default function LoadingSpinner(props: SelfProps) {
