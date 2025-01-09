@@ -554,6 +554,9 @@ client.on("message_create", async (message: Message) => {
   const groupChatObj: GroupChat = chat as GroupChat;
 
   switch (message.body) {
+    case "!shouldi":
+      message.reply(Math.random() < 0.5 ? "Yes ✅" : "Nah ❌");
+      break;
     case "!piket":
       const startDate = new Date("2024-11-04");
       const endDate = new Date(
@@ -573,6 +576,7 @@ client.on("message_create", async (message: Message) => {
 *!star* - Tandai pesan dengan bintang. ⭐
 *!login* Masuk dan tambahkan perintah bot baru. 🔧
 *!group* - Cek dan daftar grup pada bot. 👥
+*!shouldi* - Dapatkan respon random iya atau tidak. ✅❌
 *!test <pesan>* - Cek apa yang anda katakan. 🗣️
 *!ai <pesan>* - Ajukan pertanyaan ke AI dan terima balasan. 🤖
 *!aicepat <pesan>* - Ajukan pertanyaan cepat ke AI dan terima balasan. ⚡

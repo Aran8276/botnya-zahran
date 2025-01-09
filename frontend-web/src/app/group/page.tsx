@@ -80,6 +80,7 @@ import {
 } from "@/components/types/type";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/spinner";
+import { AlertDialogCancel } from "@radix-ui/react-alert-dialog";
 // import Link from "next/link";
 
 interface BroadcastFormData {
@@ -244,6 +245,23 @@ export default function Page() {
   //     dispatch(setDeleteLoading(false));
   //   }
   // };
+
+  const deleteGroup = async () => {
+    try {
+      await axios.delete(
+        `${laravelUrl}/api/group/${state.data?.group.group_user_id}`,
+        requestHeader()
+      );
+
+      window.location.replace("/login");
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        toast(error.message);
+        console.log(error.message);
+      }
+      console.log(error);
+    }
+  };
 
   const fetchPermissions = async () => {
     try {
@@ -450,7 +468,33 @@ export default function Page() {
                       </AlertDialogContent>
                     </AlertDialog>
 
-                    <Button variant="destructive">Hapus Registrasi</Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive">Hapus Registrasi</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Are you absolutely sure?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete your account and remove your data from our
+                            servers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <div className="flex space-x-3">
+                            <AlertDialogCancel asChild>
+                              <Button variant="outline">Tutup</Button>
+                            </AlertDialogCancel>
+                            <Button onClick={deleteGroup} variant="destructive">
+                              Hapus
+                            </Button>
+                          </div>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardFooter>
               </Card>
