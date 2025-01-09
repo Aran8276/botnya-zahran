@@ -821,6 +821,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         const response = args.join(" ");
 
         message.reply(`Ada berkata: ${response}`);
+        return;
       }
 
       if (command == "!ai") {
@@ -852,6 +853,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         const data = res.data;
         console.log(`Asked AI question: ${message.body} by ${message.author}`);
         message.reply(`${data?.choices[0].message.content}`);
+        return;
       }
 
       if (command == "!aicepat") {
@@ -885,6 +887,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
           `Asked fast AI question: ${message.body} by ${message.author}`
         );
         message.reply(`${data?.choices[0].message.content}`);
+        return;
       }
 
       if (command == "!aicoding") {
