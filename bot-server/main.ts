@@ -440,6 +440,10 @@ client.once("ready", async () => {
 client.once("ready", async () => {
   const groups: AllGroupsResponse = await getGroup();
   const pikets: Piket[] = [];
+  if (!groups || !groups.groups) {
+    return;
+  }
+
   groups.groups.map((item) => {
     if (item.group_user_id && item.group_settings.schedule_piket) {
       pikets.push({
@@ -487,6 +491,11 @@ server.get("/group", async (req, res) => {
     clearTimeout(groupMotdTimeout);
     const groups: AllGroupsResponse = await getGroup();
     const pikets: Piket[] = [];
+
+    if (!groups || !groups.groups) {
+      return;
+    }
+
     groups.groups.map((item) => {
       if (item.group_user_id && item.group_settings.schedule_piket) {
         pikets.push({
