@@ -231,7 +231,8 @@ const scheduleFunction = async (
 
 const startAdminPfpTimeout = async () => {
   const data: AdminDetailResponse = await getAdmin();
-  if (!data.group) {
+
+  if (!data || !data.group) {
     console.log("no group");
     return;
   }
@@ -1097,11 +1098,11 @@ ${kelompok
               console.log(url);
               message.reply(await MessageMedia.fromUrl(url));
             });
-          } else {
-            message.reply(
-              "Perintah ini tidak ditemukan.\n\nKetik `!help` untuk lihat daftar atau tambahkan perintah baru melalui login `!login`."
-            );
           }
+        } else {
+          message.reply(
+            "Perintah ini tidak ditemukan.\n\nKetik `!help` untuk lihat daftar atau tambahkan perintah baru melalui login `!login`."
+          );
         }
       } catch (error) {
         console.error("Error fetching custom responses:", error);

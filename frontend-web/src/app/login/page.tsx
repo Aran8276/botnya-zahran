@@ -297,209 +297,219 @@ export default function Page() {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen mx-6 lg:mx-0">
-      <Tabs value={state.tab} onValueChange={onTabChange} className="w-[400px]">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="ai">AI</TabsTrigger>
-          <TabsTrigger value="prompt">Perintah</TabsTrigger>
-          <TabsTrigger value="group">Group</TabsTrigger>
-          <TabsTrigger value="admin">Admin</TabsTrigger>
-        </TabsList>
+    <>
+      <div className="flex justify-center items-center h-screen mx-6 lg:mx-0">
+        <Tabs
+          value={state.tab}
+          onValueChange={onTabChange}
+          className="w-[400px]"
+        >
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="ai">AI</TabsTrigger>
+            <TabsTrigger value="prompt">Perintah</TabsTrigger>
+            <TabsTrigger value="group">Group</TabsTrigger>
+            <TabsTrigger value="admin">Admin</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="ai">
-          <Card className="mx-auto flex justify-center items-center h-[365px] max-w-sm">
-            <div className="flex flex-col text-center">
+          <TabsContent value="ai">
+            <Card className="mx-auto flex justify-center items-center h-[365px] max-w-sm">
+              <div className="flex flex-col text-center">
+                <CardHeader>
+                  <CardTitle className="text-2xl">AI Coding</CardTitle>
+                  <CardDescription>
+                    Masuk aplikasi untuk mengakses AI Coding.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col space-y-4 w-full">
+                    {state.error ? (
+                      <span className="text-red-500 text-sm">
+                        {state.error}
+                      </span>
+                    ) : (
+                      <></>
+                    )}
+                    <div>
+                      <Link href="/ai-coding">
+                        <Button type="submit" className=" w-full">
+                          Masuk
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </div>
+            </Card>
+          </TabsContent>
+          <TabsContent value="prompt">
+            <Card className="mx-auto h-[365px] max-w-sm">
               <CardHeader>
-                <CardTitle className="text-2xl">AI Coding</CardTitle>
+                <CardTitle className="text-2xl">Kelola Perintah</CardTitle>
                 <CardDescription>
-                  Masuk aplikasi untuk mengakses AI Coding.
+                  Masukan kode OTP yang didapatkan dari bot untuk mengelola
+                  perintah.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col space-y-4 w-full">
+                <form ref={promptPromtRef} onSubmit={promptLogin}>
+                  <div className="flex flex-col justify-center items-center">
+                    <div className="pt-8">
+                      <InputOTP
+                        onComplete={() =>
+                          promptPromtRef.current?.requestSubmit()
+                        }
+                        name="otp"
+                        maxLength={6}
+                        pattern={REGEXP_ONLY_DIGITS}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+
+                    <div className="pt-6 w-full">
+                      {state.error && (
+                        <span className="text-red-500 text-sm">
+                          {state.error}
+                        </span>
+                      )}
+
+                      <div className="pt-4">
+                        {state.isLoading ? (
+                          <Button disabled className="w-full">
+                            <LoadingSpinner />
+                          </Button>
+                        ) : (
+                          <Button type="submit" className="w-full">
+                            Masuk
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="group">
+            <Card className="mx-auto min-h-[365px] max-w-sm">
+              <CardHeader>
+                <CardTitle className="text-2xl">Group</CardTitle>
+                <CardDescription>
+                  Silahkan masukan ID group yang telah diberikan.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleGroupLogin} className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="id">ID Group</Label>
+                    <Input
+                      defaultValue={state.groupDefaultId}
+                      id="id"
+                      name="groupId"
+                      type="text"
+                      placeholder="12345678"
+                      required
+                    />
+                  </div>
+                  {state.groupHasPassword && (
+                    <div className="grid gap-2">
+                      <div className="flex items-center">
+                        <Label htmlFor="password">Password</Label>
+                      </div>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                      />
+                    </div>
+                  )}
+
                   {state.error ? (
                     <span className="text-red-500 text-sm">{state.error}</span>
                   ) : (
                     <></>
                   )}
-                  <div>
-                    <Link href="/ai-coding">
-                      <Button type="submit" className=" w-full">
-                        Masuk
-                      </Button>
-                    </Link>
-                  </div>
+                  {state.isLoading ? (
+                    <Button disabled className="w-full">
+                      <LoadingSpinner />
+                    </Button>
+                  ) : (
+                    <Button type="submit" className="w-full">
+                      Masuk
+                    </Button>
+                  )}
+                </form>
+                <div className="mt-4 text-left text-sm">
+                  <a href="#" className="text-blue-500 underline">
+                    Lupa password?
+                  </a>
                 </div>
               </CardContent>
-            </div>
-          </Card>
-        </TabsContent>
-        <TabsContent value="prompt">
-          <Card className="mx-auto h-[365px] max-w-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl">Kelola Perintah</CardTitle>
-              <CardDescription>
-                Masukan kode OTP yang didapatkan dari bot untuk mengelola
-                perintah.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form ref={promptPromtRef} onSubmit={promptLogin}>
-                <div className="flex flex-col justify-center items-center">
-                  <div className="pt-8">
-                    <InputOTP
-                      onComplete={() => promptPromtRef.current?.requestSubmit()}
-                      name="otp"
-                      maxLength={6}
-                      pattern={REGEXP_ONLY_DIGITS}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                      </InputOTPGroup>
-                      <InputOTPSeparator />
-                      <InputOTPGroup>
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
+            </Card>
+          </TabsContent>
+          <TabsContent value="admin">
+            <Card className="mx-auto min-h-[365px] max-w-sm">
+              <CardHeader>
+                <CardTitle className="text-2xl">Admin</CardTitle>
+                <CardDescription>Halo admin, silahkan masuk.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={(e) => handleLogin(e)} className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="toyota@calya.com"
+                      required
+                    />
                   </div>
-
-                  <div className="pt-6 w-full">
-                    {state.error && (
-                      <span className="text-red-500 text-sm">
-                        {state.error}
-                      </span>
-                    )}
-
-                    <div className="pt-4">
-                      {state.isLoading ? (
-                        <Button disabled className="w-full">
-                          <LoadingSpinner />
-                        </Button>
-                      ) : (
-                        <Button type="submit" className="w-full">
-                          Masuk
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="group">
-          <Card className="mx-auto min-h-[365px] max-w-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl">Group</CardTitle>
-              <CardDescription>
-                Silahkan masukan ID group yang telah diberikan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleGroupLogin} className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="id">ID Group</Label>
-                  <Input
-                    defaultValue={state.groupDefaultId}
-                    id="id"
-                    name="groupId"
-                    type="text"
-                    placeholder="12345678"
-                    required
-                  />
-                </div>
-                {state.groupHasPassword && (
                   <div className="grid gap-2">
                     <div className="flex items-center">
                       <Label htmlFor="password">Password</Label>
                     </div>
                     <Input
                       id="password"
-                      name="password"
                       type="password"
+                      name="password"
                       required
                     />
                   </div>
-                )}
-
-                {state.error ? (
-                  <span className="text-red-500 text-sm">{state.error}</span>
-                ) : (
-                  <></>
-                )}
-                {state.isLoading ? (
-                  <Button disabled className="w-full">
-                    <LoadingSpinner />
-                  </Button>
-                ) : (
-                  <Button type="submit" className="w-full">
-                    Masuk
-                  </Button>
-                )}
-              </form>
-              <div className="mt-4 text-left text-sm">
-                <a href="#" className="text-blue-500 underline">
-                  Lupa password?
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="admin">
-          <Card className="mx-auto min-h-[365px] max-w-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl">Admin</CardTitle>
-              <CardDescription>Halo admin, silahkan masuk.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={(e) => handleLogin(e)} className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="toyota@calya.com"
-                    required
-                  />
+                  {state.error && (
+                    <span className="text-red-500 text-sm">{state.error}</span>
+                  )}
+                  {state.isLoading ? (
+                    <Button disabled className="w-full">
+                      <LoadingSpinner />
+                    </Button>
+                  ) : (
+                    <Button type="submit" className="w-full">
+                      Masuk
+                    </Button>
+                  )}
+                </form>
+                <div className="mt-4 text-left text-sm">
+                  <a href="#" className="text-blue-500 underline">
+                    Lupa password?
+                  </a>
                 </div>
-                <div className="grid gap-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    name="password"
-                    required
-                  />
-                </div>
-                {state.error && (
-                  <span className="text-red-500 text-sm">{state.error}</span>
-                )}
-                {state.isLoading ? (
-                  <Button disabled className="w-full">
-                    <LoadingSpinner />
-                  </Button>
-                ) : (
-                  <Button type="submit" className="w-full">
-                    Masuk
-                  </Button>
-                )}
-              </form>
-              <div className="mt-4 text-left text-sm">
-                <a href="#" className="text-blue-500 underline">
-                  Lupa password?
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
   );
 }
