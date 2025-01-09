@@ -385,6 +385,10 @@ client.once("ready", async () => {
 client.once("ready", async () => {
   const groups: AllGroupsResponse = await getGroup();
   const motds: Motd[] = [];
+
+  if (!groups || !groups.groups) {
+    return;
+  }
   groups.groups.map((item) => {
     if (
       item.group_user_id &&
