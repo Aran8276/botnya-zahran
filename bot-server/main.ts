@@ -887,7 +887,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
       if (command == "!aicoding") {
         const response = args.join(" ");
-        const apiKey = "83f5dbea-a951-4f6a-9c77-359cb333383e";
+        const apiKey = process.env.SAMBANOVA_API_KEY;
         const res = await axios.post(
           `https://api.sambanova.ai/v1/chat/completions`,
 
