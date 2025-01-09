@@ -644,6 +644,7 @@ Kode OTP akan kadaluarsa dalam 15 menit.`
           "Gagal mendapatkan OTP: \n" + JSON.stringify(error, null, 2)
         );
       }
+      break;
     case "!group":
       if (!chat.isGroup) {
         await chat.sendMessage("Ini bukan group");
@@ -814,6 +815,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       };
 
       fetchPostData();
+      break;
     default:
       if (command == "!test") {
         const response = args.join(" ");
@@ -919,6 +921,8 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         message.reply(
           `${data?.choices[0].message.content}\n\n**Tip: Gunakan AI ini dengan potensi full di ${process.env.FRONTEND_URL}/ai-coding !**`
         );
+
+        return;
       }
 
       if (command == "!buatgambar") {
@@ -956,6 +960,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
             `Gagal membuat gambar: ${JSON.stringify(error, null, 2)}`
           );
         }
+        return;
       }
 
       if (command == "!deteksigambar") {
@@ -996,11 +1001,18 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
         const data = res.data;
         message.reply(data.choices[0].message.content);
+        return;
       }
 
       if (command == "!spin") {
         const response = args.join(" ");
         const number = Number(response);
+        if (number > students.length) {
+          message.reply(
+            `Argumen salah.\n\nContoh Penggunaan: !spin <jumlah kelompok (1-${students.length})>`
+          );
+          return;
+        }
         const kelompok = createGroups(students, number);
         if (!isNaN(number) || number < 1) {
           message.reply(`*Spin Kelompok*
@@ -1015,7 +1027,13 @@ ${kelompok
   )
   .join("\n\n")}
 `);
+          return;
         }
+
+        message.reply(
+          `Argumen salah.\n\nContoh Penggunaan: !spin <jumlah kelompok (1-${students.length})>`
+        );
+        return;
       }
 
       if (command == "!everyone") {
@@ -1034,6 +1052,7 @@ ${kelompok
             (item) => item.id._serialized
           ),
         });
+        return;
       }
 
       if (command == "!set_pw") {
@@ -1076,8 +1095,11 @@ ${kelompok
           if (error instanceof AxiosError) {
             console.log(error.message);
           }
+          console.error("Gagal :", JSON.stringify(error, null, 2));
+          message.reply("Gagal: \n" + JSON.stringify(error, null, 2));
           console.log(error);
         }
+        return;
       }
 
       try {
@@ -1101,7 +1123,7 @@ ${kelompok
           }
         } else {
           message.reply(
-            "Perintah ini tidak ditemukan.\n\nKetik `!help` untuk lihat daftar atau tambahkan perintah baru melalui login `!login`."
+            "Perintah ini tidak ditemukan.\n\nKetik `!help` untuk lihat daftar atau tambahkan perintah baru melalui login `!login`.\n\v1.0"
           );
         }
       } catch (error) {
