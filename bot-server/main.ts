@@ -712,7 +712,7 @@ Kode OTP akan kadaluarsa dalam 15 menit.`
               groupUserId: groupChatObj.id.user,
               groupName: groupChatObj.name,
               hasPassword: false,
-              groupPfp: profilPicUrl,
+              groupPfp: profilPicUrl || "null",
               participants: participants,
             },
             requestHeader
