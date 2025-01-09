@@ -757,7 +757,7 @@ Kode OTP akan kadaluarsa dalam 15 menit.`
             `${laravelUrl}/api/group/set-group/${groupChatObj.id.user}`,
             {
               groupName: groupChatObj.name,
-              groupPfp: profilPicUrl,
+              groupPfp: profilPicUrl || "null",
               participants: participants,
             },
             requestHeader
