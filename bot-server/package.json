@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "main.ts",
   "scripts": {
-    "start": "set NODE_ENV=production && node .",
+    "start": "set NODE_ENV=production && tsx .",
     "dev": "set NODE_ENV=production && tsx watch ./main.ts"
   },
   "keywords": [],
