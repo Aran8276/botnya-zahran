@@ -843,33 +843,33 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
       if (command == "!ai") {
         const response = args.join(" ");
-        const apiKey = process.env.SAMBANOVA_API_KEY;
+        const apiKey = process.env.CLOUDFLARE_WORKERS_API_KEY;
+        message.reply(`Asking AI question: ${response}`);
         const res = await axios.post(
-          `https://api.sambanova.ai/v1/chat/completions`,
+          `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`,
           {
-            stream: false,
-            model: "Meta-Llama-3.3-70B-Instruct",
             messages: [
               {
                 role: "system",
-                content: `You are a helpful assistant. This is a seed for randomizing responses: ${generateRandomSeed()}`,
+                content: "You are a friendly assistant",
               },
               {
                 role: "user",
                 content: response,
               },
             ],
+            raw: true,
           },
           {
             headers: {
-              Accept: "application/json",
               Authorization: `Bearer ${apiKey}`,
             },
           }
         );
         const data = res.data;
-        console.log(`Asked AI question: ${message.body} by ${message.author}`);
-        message.reply(`${data?.choices[0].message.content}`);
+        const reply = data.result.response.split("</think>");
+        message.reply(`*Thinking:* \n${reply[0]}`);
+        message.reply(`${reply[1]}`);
         return;
       }
 
