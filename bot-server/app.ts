@@ -12,13 +12,12 @@ import {
   OTPLoginResponse,
 } from "./type";
 import { Chat, Contact, GroupChat, Message } from "whatsapp-web.js";
-import { contents, students } from "./data";
-require("dotenv").config();
-
-interface Pfp {
-  target: string | null;
-  interval: number | null;
-}
+import { students } from "./src/data/data";
+import qrcode from "qrcode-terminal";
+import { server } from "./src/config/server";
+import { client } from "./src/config/client";
+import { createGroups } from "./src/controller/group/group";
+import { getAdmin } from "./src/controller/admin/admin";
 
 interface Piket {
   target: string | null;
@@ -30,13 +29,6 @@ interface Motd {
   body: string | null;
 }
 
-const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
-const qrcode = require("qrcode-terminal");
-const express = require("express");
-const server = express();
-const port = process.env.EXPRESS_PORT;
-const laravelUrl = process.env.LARAVEL_URL;
-const nextJsUrl = process.env.FRONTEND_URL;
 let botDelay = 10000000;
 let adminPfpTimeout: NodeJS.Timeout;
 let groupPfpTimeouts: { [key: string]: NodeJS.Timeout } = {};
@@ -55,157 +47,10 @@ server.use(function (req, res, next) {
   next();
 });
 
-// Super admin Laravel API Authorization headers
-const requestHeader = {
-  headers: {
-    Authorization: `Bearer ${process.env.SUPERADMIN_BEARER_TOKEN}`,
-  },
-};
-
-// Bot Configs
-const client = new Client({
-  authStrategy: new LocalAuth(),
-  puppeteer: {
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  },
-  webVersionCache: {
-    remotePath:
-      "https://raw.githubusercontent.com/wppconnect-team/wa-version/refs/heads/main/html/2.3000.1017920117-alpha.html",
-    type: "remote",
-  },
-});
-
-// Piket System
-const rotateArrays = (endDate: Date, startDate: Date) => {
-  // Calculate the number of weeks between the startDate and endDate
-  const msInWeek = 7 * 24 * 60 * 60 * 1000;
-  const rotateBy = Math.floor(
-    (endDate.getTime() - startDate.getTime()) / msInWeek
-  );
-
-  // Normalize the rotateBy value to ensure it's within the bounds of the array length
-  const normalizedRotateBy = rotateBy % contents.length;
-
-  // Rotate the array
-  const rotatedContents = contents
-    .slice(-normalizedRotateBy)
-    .concat(contents.slice(0, -normalizedRotateBy));
-
-  // Get the current date details
-  const currentYear = startDate.getFullYear();
-  const months = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
-  ];
-  const currentMonth = months[endDate.getMonth()];
-  const startOfMonth = new Date(currentYear, endDate.getMonth(), 1);
-  const pastDaysOfMonth =
-    (endDate.getTime() - startOfMonth.getTime()) / 86400000;
-  // const week = Math.ceil((pastDaysOfMonth + startOfMonth.getDay() + 1) / 7);
-
-  const getWeek = (date) => {
-    var onejan = new Date(date.getFullYear(), 0, 1);
-    var today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    var dayOfYear = (today.getTime() - onejan.getTime() + 86400000) / 86400000;
-    return Math.ceil(dayOfYear / 7);
-  };
-
-  // Generate the header
-  const header = `◎ ════ Jadwal Piket ― Minggu ke-${getWeek(
-    endDate
-  )} ${currentMonth} ${currentYear} ════ ◎`;
-
-  // Generate the output for each day
-  const days = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
-  const generateDays = [
-    "Minggu",
-    "Senin",
-    "Selasa",
-    "Rabu",
-    "Kamis",
-    "Jumat",
-    "Sabtu",
-  ];
-  const hours = endDate.getHours().toString().padStart(2, "0");
-  const minutes = endDate.getMinutes().toString().padStart(2, "0");
-
-  let output = `${header}\n`;
-
-  rotatedContents.forEach((item, index) => {
-    if (index < days.length) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + index + rotateBy * 7);
-      const day = currentDate.getDate();
-      const month = months[currentDate.getMonth()];
-      output += `${days[index]}, ${day} ${month}  (Tim ${item.tim.no}, ${item.tim.nama})\n`;
-      item.siswa.forEach((student) => {
-        output += `- ${student}\n`;
-      });
-      output += "\n";
-    }
-  });
-
-  return `${output}\nPesan ini dibuat otomatis melalui web-js-bot Aran8276 pada\n*${
-    generateDays[endDate.getDay()]
-  }, ${endDate.getDate()} ${currentMonth} ${currentYear} ${hours}:${minutes}*`;
-};
-
-// Seed Generator
-const generateRandomSeed = () => {
-  let randomNumber = "";
-  for (let i = 0; i < 16; i++) {
-    randomNumber += Math.floor(Math.random() * 10);
-  }
-  return randomNumber;
-};
-
 // Generate QR
 client.on("qr", (qr) => {
   qrcode.generate(qr, { small: true });
 });
-
-const getAdmin = async () => {
-  try {
-    const res = await axios.get(
-      `${laravelUrl}/api/admin/get-detail`,
-      requestHeader
-    );
-
-    return res.data;
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      console.log(error);
-    }
-    console.log(error);
-  }
-};
-
-const getGroup = async () => {
-  try {
-    const res = await axios.get(
-      `${laravelUrl}/api/group/get-groups`,
-      requestHeader
-    );
-
-    return res.data;
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      console.log(error);
-    }
-    console.log(error);
-  }
-};
 
 const scheduleFunction = async (
   hour: number,
@@ -269,31 +114,6 @@ const startAdminPfpTimeout = async () => {
   }, botDelay);
 };
 
-const startGroupPfpTimeout = async (interval: number, target: string) => {
-  const botDelay = interval * 1000;
-  console.log(botDelay);
-  groupPfpTimeouts[target] = setInterval(async () => {
-    try {
-      const res = await axios.get(
-        `${laravelUrl}/api/group/broadcast/pfp-slide/${target}`
-      );
-
-      const data: GroupShufflePfpResponse = res.data;
-      console.log(`${data.image} : ${target}`);
-      const url = `${laravelUrl}${data.image}`;
-      const groupChat: GroupChat = await client.getChatById(`${target}@g.us`);
-      const a = await groupChat.setPicture(await MessageMedia.fromUrl(url));
-      console.log(a);
-      // message.reply(await MessageMedia.fromUrl(url));
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        console.log(error.message);
-      }
-      console.log(error);
-    }
-  }, botDelay);
-};
-
 const startGroupPiket = async (target: string) => {
   groupPiketTimeout = setInterval(async () => {
     try {
@@ -315,40 +135,6 @@ const startGroupPiket = async (target: string) => {
       console.log(error);
     }
   }, 60 * 60 * 1000);
-};
-
-const createGroups = (
-  students: string[],
-  numGroups: number
-): GroupKelompok[] => {
-  const shuffleArray = (array: string[]) => {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-  };
-
-  shuffleArray(students);
-
-  const groups: GroupKelompok[] = [];
-  const groupSize = Math.floor(students.length / numGroups);
-  const remainder = students.length % numGroups;
-
-  let studentIndex = 0;
-
-  for (let i = 0; i < numGroups; i++) {
-    const currentGroupSize = groupSize + (i < remainder ? 1 : 0);
-    groups.push({
-      participants: students.slice(
-        studentIndex,
-        studentIndex + currentGroupSize
-      ),
-      numberOfParticipants: currentGroupSize,
-    });
-    studentIndex += currentGroupSize;
-  }
-
-  return groups;
 };
 
 // Ready Message
@@ -389,6 +175,7 @@ client.once("ready", async () => {
   if (!groups || !groups.groups) {
     return;
   }
+
   groups.groups.map((item) => {
     if (
       item.group_user_id &&
@@ -416,27 +203,6 @@ client.once("ready", async () => {
   });
 });
 
-// Group piket initializer
-// client.once("ready", async () => {
-//   const groups: AllGroupsResponse = await getGroup();
-//   const pfps: Pfp[] = [];
-//   groups.groups.map((item) => {
-//     if (item.group_user_id && item.broadcaster.pfp_slide_interval) {
-//       pfps.push({
-//         target: `${item.group_user_id}`,
-//         interval: Number(`${item.broadcaster.pfp_slide_interval}`),
-//       });
-//     }
-//   });
-
-//   console.log(pfps);
-
-//   pfps.map((item) => {
-//     item.interval &&
-//       item.target &&
-//       startGroupPfpTimeout(item.interval, item.target);
-//   });
-// });
 client.once("ready", async () => {
   const groups: AllGroupsResponse = await getGroup();
   const pikets: Piket[] = [];
