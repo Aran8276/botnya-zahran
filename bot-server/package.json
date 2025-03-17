@@ -1,10 +1,10 @@
 {
   "name": "web-js-bot",
   "version": "1.0.0",
-  "main": "app.ts",
+  "main": "main.ts",
   "scripts": {
     "start": "set NODE_ENV=production && tsx .",
-    "dev": "set NODE_ENV=production && tsx watch ./app.ts"
+    "dev": "set NODE_ENV=production && tsx watch ./main.ts"
   },
   "keywords": [],
   "author": "",
@@ -17,8 +17,5 @@
     "qrcode-terminal": "^0.12.0",
     "tsx": "^4.19.2",
     "whatsapp-web.js": "^1.26.1-alpha.3"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.0"
   }
 }
