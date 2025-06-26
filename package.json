@@ -1,0 +1,24 @@
+{
+  "name": "web-js-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "uno.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aran8276/web-js-bot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Aran8276/web-js-bot/issues"
+  },
+  "homepage": "https://github.com/Aran8276/web-js-bot#readme",
+  "dependencies": {
+    "prompt-sync": "^4.2.0"
+  }
+}

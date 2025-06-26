@@ -286,13 +286,6 @@ export interface OTPLoginResponse {
   status: number;
 }
 
-export interface FindResponsesTypeResponse {
-  success: boolean;
-  msg: string;
-  responses: Responses;
-  status: number;
-}
-
 export interface Responses {
   id: string;
   case: string;
@@ -306,4 +299,59 @@ export interface APICheckResponse {
   success: boolean;
   msg: string;
   status: number;
+}
+
+export interface APICheckResponse {
+  success: boolean;
+}
+
+export interface AdminShufflePfpResponse {
+  image: string;
+}
+
+export interface CheckIfGroupHasPwResponse {
+  success: boolean;
+  value: boolean;
+}
+
+export interface CheckIfGroupRegisteredResponse {
+  success: boolean;
+  value: boolean;
+}
+
+export interface FindResponsesTypeResponse {
+  success: boolean;
+  responses?: {
+    reply?: string;
+    images?: string;
+  };
+}
+
+export interface GroupKelompok {
+  participants: string[];
+  numberOfParticipants: number;
+}
+
+export interface GroupShufflePfpResponse {
+  image: string;
+}
+
+export interface Pfp {
+  target: string | null;
+  interval: number | null;
+}
+
+export interface Piket {
+  target: string | null;
+}
+
+export interface Motd {
+  target: string | null;
+  schedule: Date | null;
+  body: string | null;
+}
+
+export interface Deck {
+  color: string;
+  value: string;
 }

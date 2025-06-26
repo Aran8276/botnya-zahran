@@ -7,3 +7,33 @@ services:
     build: ./frontend-web
     ports:
       - "83:3000"
+  fpm:
+    build: ./backend-api
+    volumes:
+      - ./backend-api/src:/var/www
+    networks:
+      - laravel_app
+  nginx:
+    image: nginx:stable-alpine
+    ports:
+      - 84:80
+    volumes:
+      - ./backend-api/src:/var/www
+      - ./backend-api/nginx:/etc/nginx/conf.d
+    networks:
+      - laravel_app
+  db:
+    image: mysql:8.4.0
+    volumes:
+      - mysql-volume:/var/lib/mysql
+    environment:
+      MYSQL_USER: "laravel"
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ROOT_PASSWORD: "laravel"
+      MYSQL_DATABASE: "laravel"
+    networks:
+      - laravel_app
+networks:
+  laravel_app:
+volumes:
+  mysql-volume:
