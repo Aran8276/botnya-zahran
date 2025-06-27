@@ -1,9 +1,0 @@
-services:
-  bot-server:
-    build: ./bot-server
-    ports:
-      - "5000:4000"
-  frontend-web:
-    build: ./frontend-web
-    ports:
-      - "83:3000"
