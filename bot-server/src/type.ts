@@ -380,11 +380,18 @@ export interface Card {
   value: string;
 }
 
+export interface LeaderboardEntry {
+  playerName: string;
+  playerId: string;
+  rank: number | "DNF" | "Last";
+}
+
 export interface UnoGameSession {
   isInLobby: boolean;
   isGameStarted: boolean;
   players: string[];
-  host: string;
+  originalPlayers: string[];
+  host: string | null;
   currentPlayerIndex: number;
   playerHands: Record<string, Card[]>;
   deck: Card[];
@@ -393,4 +400,8 @@ export interface UnoGameSession {
   direction: 1 | -1;
   cardsToDraw: number;
   inactivityTimer: NodeJS.Timeout | null;
+  allowCardStacking: boolean;
+  leaderboard: LeaderboardEntry[];
+  unoTarget: string | null;
 }
+

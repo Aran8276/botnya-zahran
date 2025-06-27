@@ -4,6 +4,7 @@ import { contents } from "../data";
 import {
   AdminDetailResponse,
   AdminShufflePfpResponse,
+  Card,
   Deck,
   GroupKelompok,
   UnoGameSession,
@@ -293,13 +294,14 @@ export const generateRandomWords = (amount = 1) => {
   return result;
 };
 
-// ---- start uno same variable controllers ----
+// ---- start uno same exported variable controllers ----
 
 export function createNewUnoSession(): UnoGameSession {
   return {
     isInLobby: false,
     isGameStarted: false,
     players: [],
+    originalPlayers: [],
     host: "",
     currentPlayerIndex: 0,
     playerHands: {},
@@ -309,11 +311,14 @@ export function createNewUnoSession(): UnoGameSession {
     direction: 1,
     cardsToDraw: 0,
     inactivityTimer: null,
+    allowCardStacking: true,
+    leaderboard: [],
+    unoTarget: null,
   };
 }
 
 export const createUnoDeck = () => {
-  const deck: Deck[] = [];
+  const deck: Card[] = [];
   const colors = [COLORS.RED, COLORS.GREEN, COLORS.BLUE, COLORS.YELLOW];
 
   for (const color of colors) {
@@ -350,7 +355,7 @@ export const formatCard = (card) => {
   return `${card.color} ${card.value}`;
 };
 
-// ---- end uno same variable controllers ----
+// ---- end uno same exported variable controllers ----
 
 export const parseTime = (timeArg) => {
   const unit = timeArg.slice(-1);
