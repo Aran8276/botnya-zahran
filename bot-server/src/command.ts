@@ -31,7 +31,7 @@ function getWordsFromFile() {
     return wordsCache;
   }
   try {
-    const WORD_FILE_PATH = path.join(__dirname, "google-10000-english.txt");
+    const WORD_FILE_PATH = path.join(__dirname, "words.txt");
     console.log(WORD_FILE_PATH);
     const fileContent = fs.readFileSync(WORD_FILE_PATH, "utf8");
     const words = fileContent.split("\n").filter(Boolean);
@@ -43,7 +43,7 @@ function getWordsFromFile() {
   } catch (error) {
     console.log(a);
     console.error(
-      "Error: Could not read 'google-10000-english.txt'. Make sure it's in the same directory as your script."
+      "Error: Could not read 'words.txt'. Make sure it's in the same directory as your script."
     );
     return [];
   }
@@ -862,7 +862,6 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
     default:
       if (command == "!ai") {
-        console.log("in");
         const response = args.join(" ");
 
         const userMode = response.split(" ")[0];
@@ -888,17 +887,17 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
         await Promise.all(
           recentMessages.map(async (item) => {
-            if (!(item.id as MessageID).participant._serialized) {
+            if (!(item.id as MessageID)?.participant?._serialized) {
               return;
             }
 
             const contact = await client.getContactById(
-              (item.id as MessageID).participant._serialized
+              (item.id as MessageID)?.participant?._serialized
             );
 
             savedRecentMsg.push({
-              name: contact.pushname,
-              body: item.body,
+              name: contact?.pushname || "User",
+              body: item?.body || "Cannot fetch text",
             });
           })
         );
