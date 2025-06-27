@@ -4,12 +4,14 @@ import { contents } from "../data";
 import {
   AdminDetailResponse,
   AdminShufflePfpResponse,
+  BlackjackCard,
+  BlackjackGameSession,
   Card,
   Deck,
   GroupKelompok,
   UnoGameSession,
 } from "./type";
-import { COLORS, VALUES } from "./const";
+import { COLORS, RANKS, SUITS, VALUES } from "./const";
 
 const fs = require("fs");
 const path = require("path");
@@ -294,8 +296,6 @@ export const generateRandomWords = (amount = 1) => {
   return result;
 };
 
-// ---- start uno same exported variable controllers ----
-
 export function createNewUnoSession(): UnoGameSession {
   return {
     isInLobby: false,
@@ -355,7 +355,72 @@ export const formatCard = (card) => {
   return `${card.color} ${card.value}`;
 };
 
-// ---- end uno same exported variable controllers ----
+// ---- start blackjack same exported variable controllers ----
+export function createNewBlackjackSession(): BlackjackGameSession {
+  return {
+    isInLobby: false,
+    isGameStarted: false,
+    players: {},
+    playerOrder: [],
+    host: "",
+    currentPlayerIndex: 0,
+    dealerHand: [],
+    deck: [],
+    gamePhase: "ended",
+    startingChips: 0,
+  };
+}
+
+export const createBlackjackDeck = (): BlackjackCard[] => {
+  const deck: BlackjackCard[] = [];
+  const suits = Object.values(SUITS);
+  const ranks = Object.values(RANKS);
+
+  for (const suit of suits) {
+    for (const rank of ranks) {
+      deck.push({ suit, rank });
+    }
+  }
+  return deck;
+};
+
+export const shuffleBlackjack = (array: any[]) => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+};
+
+export const formatCardBlackjack = (card: BlackjackCard): string => {
+  if (!card) return "";
+  return `${card.rank}${card.suit}`;
+};
+
+export const getHandValue = (hand: BlackjackCard[]): number => {
+  let value = 0;
+  let aceCount = 0;
+  for (const card of hand) {
+    if (card.rank === RANKS.ACE) {
+      aceCount++;
+      value += 11;
+    } else if (
+      [RANKS.KING, RANKS.QUEEN, RANKS.JACK, RANKS.TEN].includes(card.rank)
+    ) {
+      value += 10;
+    } else {
+      value += parseInt(card.rank, 10);
+    }
+  }
+
+  while (value > 21 && aceCount > 0) {
+    value -= 10;
+    aceCount--;
+  }
+
+  return value;
+};
+
+// ---- end blackjack same exported variable controllers ----
 
 export const parseTime = (timeArg) => {
   const unit = timeArg.slice(-1);

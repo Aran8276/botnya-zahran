@@ -405,3 +405,29 @@ export interface UnoGameSession {
   unoTarget: string | null;
 }
 
+export interface BlackjackCard {
+  suit: string;
+  rank: string;
+}
+
+export interface PlayerState {
+  id: string;
+  name: string;
+  hand: BlackjackCard[];
+  chips: number;
+  bet: number;
+  status: "playing" | "busted" | "stand" | "blackjack" | "waiting";
+}
+
+export interface BlackjackGameSession {
+  isInLobby: boolean;
+  isGameStarted: boolean;
+  players: Record<string, PlayerState>;
+  playerOrder: string[];
+  host: string;
+  currentPlayerIndex: number;
+  dealerHand: BlackjackCard[];
+  deck: BlackjackCard[];
+  gamePhase: "betting" | "player_turn" | "dealer_turn" | "payout" | "ended";
+  startingChips: number;
+}

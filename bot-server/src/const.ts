@@ -26,6 +26,29 @@ export const VALUES = {
   WILD_DRAW_FOUR: "WILD_DRAW_FOUR",
 };
 
+export const SUITS = {
+  HEARTS: "♥️",
+  DIAMONDS: "♦️",
+  CLUBS: "♣️",
+  SPADES: "♠️",
+};
+
+export const RANKS = {
+  ACE: "A",
+  TWO: "2",
+  THREE: "3",
+  FOUR: "4",
+  FIVE: "5",
+  SIX: "6",
+  SEVEN: "7",
+  EIGHT: "8",
+  NINE: "9",
+  TEN: "10",
+  JACK: "J",
+  QUEEN: "Q",
+  KING: "K",
+};
+
 export const laravelUrl = process.env.LARAVEL_URL;
 export const nextJsUrl = process.env.FRONTEND_URL;
 export const requestHeader = {

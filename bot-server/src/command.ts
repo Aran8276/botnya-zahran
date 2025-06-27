@@ -16,6 +16,11 @@ import {
   formatCard,
   shuffle,
   parseTime,
+  createBlackjackDeck,
+  createNewBlackjackSession,
+  getHandValue,
+  formatCardBlackjack,
+  shuffleBlackjack,
 } from "./controller";
 import { students } from "../data";
 import {
@@ -25,6 +30,7 @@ import {
   FindResponsesTypeResponse,
   MessageID,
   SavedMsg,
+  BlackjackCard,
 } from "./type";
 import { client } from "../main";
 import { GoogleGenAI } from "@google/genai";
@@ -33,7 +39,6 @@ import { COLORS, laravelUrl, nextJsUrl, requestHeader, VALUES } from "./const";
 
 export const activeReminders = {};
 
-// ---- start uno same variable controllers ----
 let unoGameSession = createNewUnoSession();
 
 const getTopCard = () => {
@@ -131,7 +136,256 @@ const endAndShowLeaderboard = async (chat) => {
   await chat.sendMessage(leaderboardMessage, { mentions });
 };
 
-// ---- end uno same variable controllers ----
+// ---- start blackjack same variable controllers ----
+let blackjackGameSession = createNewBlackjackSession();
+
+const getHandString = (hand: BlackjackCard[]) =>
+  hand.map(formatCardBlackjack).join(" ");
+
+const checkAllPlayersBet = async (chat) => {
+  const activePlayers = blackjackGameSession.playerOrder.filter(
+    (pId) => blackjackGameSession.players[pId].chips > 0
+  );
+  const allBet = activePlayers.every(
+    (pId) => blackjackGameSession.players[pId].bet > 0
+  );
+
+  if (allBet && activePlayers.length > 0) {
+    await chat.sendMessage("Kabeh wes masang bet! Kartu dibagi saiki...");
+    await dealInitialCards(chat);
+  }
+};
+
+const dealInitialCards = async (chat) => {
+  blackjackGameSession.gamePhase = "player_turn";
+  blackjackGameSession.deck = createBlackjackDeck();
+  shuffleBlackjack(blackjackGameSession.deck);
+
+  for (const pId of blackjackGameSession.playerOrder) {
+    if (blackjackGameSession.players[pId].chips > 0) {
+      blackjackGameSession.players[pId].status = "playing";
+    }
+  }
+
+  for (let i = 0; i < 2; i++) {
+    for (const pId of blackjackGameSession.playerOrder) {
+      if (blackjackGameSession.players[pId].status === "playing") {
+        blackjackGameSession.players[pId].hand.push(
+          blackjackGameSession.deck.pop()!
+        );
+      }
+    }
+    blackjackGameSession.dealerHand.push(blackjackGameSession.deck.pop()!);
+  }
+
+  let dealMessage = `Dealer e nunjukno: *${formatCardBlackjack(
+    blackjackGameSession.dealerHand[0]
+  )}*\n\nKartu Pemain:\n`;
+  const mentions: any[] = [];
+
+  for (const pId of blackjackGameSession.playerOrder) {
+    const player = blackjackGameSession.players[pId];
+    if (player.status === "playing") {
+      const handValue = getHandValue(player.hand);
+      dealMessage += `- @${player.name}: ${getHandString(
+        player.hand
+      )} (*${handValue}*)\n`;
+      if (handValue === 21) {
+        player.status = "blackjack";
+        dealMessage += `  ↳ BLACKJACK!\n`;
+      }
+      mentions.push(await client.getContactById(pId));
+    }
+  }
+
+  await chat.sendMessage(dealMessage, { mentions });
+
+  const dealerValue = getHandValue(blackjackGameSession.dealerHand);
+  if (dealerValue === 21) {
+    await chat.sendMessage(
+      `Dealer duwe Blackjack! Tangane: ${getHandString(
+        blackjackGameSession.dealerHand
+      )}`
+    );
+    await processPayouts(chat);
+  } else {
+    await advanceToNextPlayer(chat);
+  }
+};
+
+const advanceToNextPlayer = async (chat) => {
+  let nextPlayerIndex = blackjackGameSession.currentPlayerIndex;
+  let nextPlayerFound = false;
+
+  for (let i = 0; i < blackjackGameSession.playerOrder.length; i++) {
+    const pId = blackjackGameSession.playerOrder[nextPlayerIndex];
+    const player = blackjackGameSession.players[pId];
+
+    if (player.status === "playing") {
+      nextPlayerFound = true;
+      break;
+    }
+    nextPlayerIndex =
+      (nextPlayerIndex + 1) % blackjackGameSession.playerOrder.length;
+  }
+
+  if (nextPlayerFound) {
+    blackjackGameSession.currentPlayerIndex = nextPlayerIndex;
+    const nextPlayerId =
+      blackjackGameSession.playerOrder[blackjackGameSession.currentPlayerIndex];
+    const player = blackjackGameSession.players[nextPlayerId];
+    const handValue = getHandValue(player.hand);
+    const contact = await client.getContactById(nextPlayerId);
+
+    await chat.sendMessage(
+      `Giliranmu, @${contact.id.user}!\nKartumu: *${getHandString(
+        player.hand
+      )}* (Nilai: *${handValue}*).\nKetik *!hit* opo *!stand*.`,
+      { mentions: [contact] }
+    );
+  } else {
+    await dealerTurn(chat);
+  }
+};
+
+const dealerTurn = async (chat) => {
+  blackjackGameSession.gamePhase = "dealer_turn";
+  let dealerValue = getHandValue(blackjackGameSession.dealerHand);
+
+  let dealerMessage = `Kabeh pemain wes rampung. Saiki gilirane dealer.\nDealer mbukak kartu: *${getHandString(
+    blackjackGameSession.dealerHand
+  )}* (Nilai: *${dealerValue}*)`;
+  await chat.sendMessage(dealerMessage);
+
+  while (dealerValue < 17) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const newCard = blackjackGameSession.deck.pop()!;
+    blackjackGameSession.dealerHand.push(newCard);
+    dealerValue = getHandValue(blackjackGameSession.dealerHand);
+    await chat.sendMessage(
+      `Dealer ngambil kartu... entuk *${formatCardBlackjack(
+        newCard
+      )}*.\nSaiki tangane: *${getHandString(
+        blackjackGameSession.dealerHand
+      )}* (Nilai: *${dealerValue}*)`
+    );
+  }
+
+  if (dealerValue > 21) {
+    await chat.sendMessage(`Dealer BUST!`);
+  }
+
+  await processPayouts(chat);
+};
+
+const processPayouts = async (chat) => {
+  blackjackGameSession.gamePhase = "payout";
+  const dealerValue = getHandValue(blackjackGameSession.dealerHand);
+  const isDealerBust = dealerValue > 21;
+
+  let summaryMessage = `*--- Hasil Ronde ---*\nDealer duwe nilai *${
+    isDealerBust ? "BUST" : dealerValue
+  }* karo kartu ${getHandString(blackjackGameSession.dealerHand)}\n\n`;
+  const mentions: any[] = [];
+
+  for (const pId of blackjackGameSession.playerOrder) {
+    const player = blackjackGameSession.players[pId];
+    if (player.bet === 0) continue;
+
+    mentions.push(await client.getContactById(pId));
+    const playerValue = getHandValue(player.hand);
+
+    summaryMessage += `- @${player.name}: ${getHandString(
+      player.hand
+    )} (${playerValue}) - `;
+
+    if (player.status === "blackjack") {
+      if (dealerValue === 21 && blackjackGameSession.dealerHand.length === 2) {
+        summaryMessage += `*Push!* Bet e mbalik.\n`;
+      } else {
+        const winnings = Math.floor(player.bet * 1.5);
+        player.chips += winnings;
+        summaryMessage += `*Blackjack!* Menang *${winnings}* chips.\n`;
+      }
+    } else if (player.status === "busted") {
+      player.chips -= player.bet;
+      summaryMessage += `*Bust!* Kalah *${player.bet}* chips.\n`;
+    } else if (isDealerBust) {
+      player.chips += player.bet;
+      summaryMessage += `*Menang!* Dapet *${player.bet}* chips.\n`;
+    } else if (playerValue > dealerValue) {
+      player.chips += player.bet;
+      summaryMessage += `*Menang!* Dapet *${player.bet}* chips.\n`;
+    } else if (playerValue < dealerValue) {
+      player.chips -= player.bet;
+      summaryMessage += `*Kalah!* Ilang *${player.bet}* chips.\n`;
+    } else {
+      summaryMessage += `*Push!* Bet e mbalik.\n`;
+    }
+  }
+
+  await chat.sendMessage(summaryMessage, { mentions });
+  await startNewRound(chat);
+};
+
+const startNewRound = async (chat) => {
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+
+  let statusMessage = "*--- Ronde Baru ---*\n\nStatus Chip:\n";
+  const activePlayers = [];
+  const mentions = [];
+
+  blackjackGameSession.playerOrder.forEach((pId) => {
+    const player = blackjackGameSession.players[pId];
+    statusMessage += `- @${player.name}: *${player.chips}* chips\n`;
+    if (player.chips > 0) {
+      // @ts-ignore
+      activePlayers.push(pId);
+    }
+  });
+
+  if (activePlayers.length < 1) {
+    await chat.sendMessage("Ora onok pemain seng duwe chip. Game buyar!");
+    await endBlackjackGame(chat);
+    return;
+  }
+
+  blackjackGameSession.playerOrder = activePlayers;
+  blackjackGameSession.deck = [];
+  blackjackGameSession.dealerHand = [];
+  blackjackGameSession.currentPlayerIndex = 0;
+
+  for (const pId in blackjackGameSession.players) {
+    const player = blackjackGameSession.players[pId];
+    player.hand = [];
+    player.bet = 0;
+    player.status = player.chips > 0 ? "waiting" : "busted";
+  }
+
+  statusMessage += `\nSilahkan pasang bet samean nganggo \`!bet [jumlah]\`.`;
+
+  const playerContacts = await Promise.all(
+    blackjackGameSession.playerOrder.map((pId) => client.getContactById(pId))
+  );
+
+  await chat.sendMessage(statusMessage, { mentions: playerContacts });
+  blackjackGameSession.gamePhase = "betting";
+};
+
+const endBlackjackGame = async (chat) => {
+  let finalMessage = "*Permainan Blackjack buyar!*\n\nSkor Akhir:\n";
+  const playerContacts = [];
+  for (const pId in blackjackGameSession.players) {
+    const player = blackjackGameSession.players[pId];
+    finalMessage += `- @${player.name}: ${player.chips} chips\n`;
+    // @ts-ignore
+    playerContacts.push(await client.getContactById(pId));
+  }
+  await chat.sendMessage(finalMessage, { mentions: playerContacts });
+  blackjackGameSession = createNewBlackjackSession();
+};
+
+// ---- end blackjack same variable controllers ----
 
 export const handleCommand = async (message: Message, client: any) => {
   const [command, ...args] = message.body.split(" ");
@@ -481,8 +735,6 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       intr2 = setInterval(render2, 1000 / videoData.fps);
 
       break;
-
-    // --- START UNO CODE ----
 
     case "!unocreate":
       if (unoGameSession.isInLobby || unoGameSession.isGameStarted) {
@@ -865,7 +1117,283 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       }
       break;
 
+    // --- START BLACKJACK CODE ----
+
+    case "!blackjackjoin":
+      if (blackjackGameSession.isGameStarted) {
+        message.reply("Game wes jalan. Ndak boleh gabung ❌.");
+        return;
+      }
+      if (!blackjackGameSession.isInLobby) {
+        message.reply("Ora onok lobi Blackjack seng aktif. ❌");
+        return;
+      }
+
+      const newPlayerContactBlackjack = await message.getContact();
+      const newPlayerIdBlackjack = newPlayerContactBlackjack.id._serialized;
+
+      if (blackjackGameSession.players[newPlayerIdBlackjack]) {
+        message.reply("Kon wes join rek!");
+        return;
+      }
+
+      blackjackGameSession.players[newPlayerIdBlackjack] = {
+        id: newPlayerIdBlackjack,
+        name:
+          newPlayerContactBlackjack.pushname ||
+          newPlayerContactBlackjack.id.user,
+        hand: [],
+        chips: blackjackGameSession.startingChips,
+        bet: 0,
+        status: "waiting",
+      };
+      blackjackGameSession.playerOrder.push(newPlayerIdBlackjack);
+
+      chat.sendMessage(
+        `@${newPlayerContactBlackjack.id.user} wes gabung ndek meja Blackjack!`,
+        // @ts-ignore
+        { mentions: [newPlayerContactBlackjack] }
+      );
+      break;
+
+    case "!blackjackstart":
+      const requesterIdStart = (await message.getContact()).id._serialized;
+      if (requesterIdStart !== blackjackGameSession.host) {
+        message.reply("Host ae seng isok mulai game.");
+        return;
+      }
+      if (!blackjackGameSession.isInLobby) {
+        message.reply("Ora onok lobi, gae sek `!blackjackcreate`.");
+        return;
+      }
+
+      blackjackGameSession.isInLobby = false;
+      blackjackGameSession.isGameStarted = true;
+      await chat.sendMessage("🎉 Game Blackjack dimulai! 🎉");
+      await startNewRound(chat);
+      break;
+
+    case "!hit":
+      if (!blackjackGameSession.isGameStarted) return;
+      const hitPlayerId = (await message.getContact()).id._serialized;
+      if (
+        blackjackGameSession.playerOrder[
+          blackjackGameSession.currentPlayerIndex
+        ] !== hitPlayerId
+      ) {
+        message.reply("Duduk giliranmu rek!");
+        return;
+      }
+
+      const playerHit = blackjackGameSession.players[hitPlayerId];
+      if (playerHit.status !== "playing") {
+        message.reply("Kon wes stand opo bust, rak isoh hit.");
+        return;
+      }
+      const newCard = blackjackGameSession.deck.pop()!;
+      playerHit.hand.push(newCard);
+      const handValue = getHandValue(playerHit.hand);
+
+      await message.reply(
+        `Kon entuk *${formatCardBlackjack(
+          newCard
+        )}*.\nSaiki kartumu: *${getHandString(
+          playerHit.hand
+        )}* (Nilai: *${handValue}*)`
+      );
+
+      if (handValue > 21) {
+        playerHit.status = "busted";
+        await message.reply("BUST! Kon kalah neng ronde iki.");
+        await advanceToNextPlayer(chat);
+      } else if (handValue === 21) {
+        playerHit.status = "stand";
+        await message.reply("Nilai 21! Otomatis stand.");
+        await advanceToNextPlayer(chat);
+      }
+      break;
+
+    case "!stand":
+      if (!blackjackGameSession.isGameStarted) return;
+      const standPlayerId = (await message.getContact()).id._serialized;
+      if (
+        blackjackGameSession.playerOrder[
+          blackjackGameSession.currentPlayerIndex
+        ] !== standPlayerId
+      ) {
+        message.reply("Duduk giliranmu rek!");
+        return;
+      }
+
+      const playerStand = blackjackGameSession.players[standPlayerId];
+      if (playerStand.status !== "playing") {
+        message.reply("Kon wes stand opo bust.");
+        return;
+      }
+      playerStand.status = "stand";
+      await message.reply("Kon milih stand.");
+      await advanceToNextPlayer(chat);
+      break;
+
+    case "!blackjackhand":
+      if (!blackjackGameSession.isGameStarted) {
+        message.reply("Game durung mulai.");
+        return;
+      }
+      const handPlayerContact = await message.getContact();
+      const handPlayerId = handPlayerContact.id._serialized;
+      const playerHandBlackjack = blackjackGameSession.players[handPlayerId];
+
+      if (!playerHandBlackjack) {
+        message.reply("Kon ora melu main.");
+        return;
+      }
+
+      let handMessageBlackjack = `Chip mu: *${playerHandBlackjack.chips}*\nBet mu: *${playerHandBlackjack.bet}*\n\n`;
+      if (playerHandBlackjack.hand.length > 0) {
+        handMessageBlackjack += `Kartumu: *${getHandString(
+          playerHandBlackjack.hand
+        )}* (Nilai: *${getHandValue(playerHandBlackjack.hand)}*)\n`;
+      } else {
+        handMessageBlackjack += "Kon durung duwe kartu.\n";
+      }
+      if (blackjackGameSession.dealerHand.length > 0) {
+        handMessageBlackjack += `Kartu dealer seng ketok: *${formatCardBlackjack(
+          blackjackGameSession.dealerHand[0]
+        )}*`;
+      }
+
+      message.reply(handMessageBlackjack);
+      break;
+
+    case "!blackjackstatus":
+      if (!blackjackGameSession.isGameStarted) {
+        message.reply("Ora onok game Blackjack seng jalan.");
+        return;
+      }
+
+      let statusMsgBlackjack = `*--- Status Meja Blackjack ---*\nFase: *${blackjackGameSession.gamePhase.toUpperCase()}*\n`;
+      if (blackjackGameSession.dealerHand.length > 0) {
+        statusMsgBlackjack += `Dealer e nunjukno: *${
+          blackjackGameSession.gamePhase === "player_turn"
+            ? formatCardBlackjack(blackjackGameSession.dealerHand[0])
+            : getHandString(blackjackGameSession.dealerHand)
+        }*\n`;
+      }
+      statusMsgBlackjack += "\nPemain:\n";
+      const statusMentions = [];
+
+      for (const pId of blackjackGameSession.playerOrder) {
+        const player = blackjackGameSession.players[pId];
+        // @ts-ignore
+        statusMentions.push(await client.getContactById(pId));
+        statusMsgBlackjack += `- @${player.name}: *${player.chips}* chips | Bet: *${player.bet}* | Status: *${player.status}*\n`;
+        if (player.hand.length > 0) {
+          statusMsgBlackjack += `  ↳ Kartu: ${getHandString(
+            player.hand
+          )} (${getHandValue(player.hand)})\n`;
+        }
+      }
+
+      await chat.sendMessage(statusMsgBlackjack, { mentions: statusMentions });
+      break;
+
+    case "!blackjackend":
+      const requesterIdEnd = (await message.getContact()).id._serialized;
+      if (requesterIdEnd !== blackjackGameSession.host) {
+        message.reply("Host ae seng isok mbuyarno game.");
+        return;
+      }
+      await endBlackjackGame(chat);
+      break;
+
     default:
+      if (command == "!blackjackcreate") {
+        if (
+          blackjackGameSession.isInLobby ||
+          blackjackGameSession.isGameStarted
+        ) {
+          message.reply("Wes onok sesi Blackjack. Pake `!blackjackend` disik.");
+          return;
+        }
+        const argsCreateBlackjack = message.body.split(" ").slice(1);
+        const startingChips = parseInt(argsCreateBlackjack[0], 10);
+        const allowedChips = [2000, 5000, 10000, 25000];
+
+        if (!allowedChips.includes(startingChips)) {
+          message.reply(
+            `Chip e salah. Pilih siji: ${allowedChips.join(", ")}.`
+          );
+          return;
+        }
+
+        blackjackGameSession = createNewBlackjackSession();
+        blackjackGameSession.isInLobby = true;
+        blackjackGameSession.startingChips = startingChips;
+
+        const hostContactBlackjack = await message.getContact();
+        const hostId = hostContactBlackjack.id._serialized;
+        blackjackGameSession.host = hostId;
+
+        blackjackGameSession.players[hostId] = {
+          id: hostId,
+          name: hostContactBlackjack.pushname || hostContactBlackjack.id.user,
+          hand: [],
+          chips: startingChips,
+          bet: 0,
+          status: "waiting",
+        };
+        blackjackGameSession.playerOrder.push(hostId);
+
+        chat.sendMessage(
+          `Lobi Blackjack wes dibuat ambek @${hostContactBlackjack.id.user}!\nStarting Chips: *${startingChips}*.\n\nKetik *!blackjackjoin* nek samean mau join.`,
+          // @ts-ignore
+          { mentions: [hostContactBlackjack] }
+        );
+        return;
+      }
+
+      // --- END BLACKJACK CODE ----
+      if (command === "!bet") {
+        if (blackjackGameSession.gamePhase !== "betting") {
+          message.reply("Durung wayahe masang bet.");
+          return;
+        }
+
+        const betPlayerContact = await message.getContact();
+        const betPlayerId = betPlayerContact.id._serialized;
+        const player = blackjackGameSession.players[betPlayerId];
+
+        if (!player) {
+          message.reply("Kon ora melu main.");
+          return;
+        }
+        if (player.bet > 0) {
+          message.reply("Kon wes masang bet.");
+          return;
+        }
+
+        const argsBet = message.body.split(" ").slice(1);
+        const betAmount = parseInt(argsBet[0], 10);
+
+        if (isNaN(betAmount) || betAmount <= 0) {
+          message.reply("Jumlah bet e ora valid.");
+          return;
+        }
+        if (betAmount > player.chips) {
+          message.reply(`Chip mu ora cukup! Chip mu mek ${player.chips}.`);
+          return;
+        }
+
+        player.bet = betAmount;
+        await chat.sendMessage(
+          `@${betPlayerContact.id.user} masang bet *${betAmount}* chips.`,
+          // @ts-ignore
+          { mentions: [betPlayerContact] }
+        );
+        await checkAllPlayersBet(chat);
+      }
+
       if (command == "!place") {
         if (!unoGameSession.isGameStarted) return;
         const args = message.body.split(" ").slice(1);
@@ -1119,8 +1647,6 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         await advanceTurn(chat, extraSkip);
         break;
       }
-
-      // --- END END CODE ----
 
       if (command == "!ai") {
         const response = args.join(" ");
@@ -1405,6 +1931,40 @@ Botnya Zahran v1.5`
 **Peringatan: Pemilik bot harus pm dirinya sendiri jika menggunakan !hand**
 
 Botnya Zahran v2.0`
+          );
+          return;
+        }
+        if (response == "blackjack") {
+          message.reply(
+            `🌟 **Cara Bermain Blackjack di WhatsApp** 🌟
+
+*♦️ SETUP PERMAINAN ♣️*
+*!blackjackcreate <jumlah_chip>*: Nggawe lobi game anyar. Chip e milih siji: \`2000\`, \`5000\`, \`10000\`, utowo \`25000\`.
+  - Contoh: \`!blackjackcreate 5000\`
+*!blackjackjoin*: 🙋‍♂️ Melu gabung lobi seng wes onok.
+*!blackjackstart*: 🚀 Miwiti game (mek isok dilakoni host).
+*!blackjackend*: 🛑 Mbuyarno game (mek host seng isok). Skor akhir bakal ditampilno.
+
+*💰 AKSI DALAM GAME ♥️*
+*!bet <jumlah>*: Masang taruhan neng awal ronde.
+  - Contoh: \`!bet 500\`
+*!hit*: ➕ Njupuk siji kartu maneh. Ati-ati ojok sampek BUST (nilai luwih teko 21)!
+*!stand*: ✅ Wes cukup, ora njupuk kartu maneh lan ngenteni giliran dealer.
+*!blackjackhand*: 🃏 Ndelok statusmu: jumlah chip, taruhan, lan kartu neng tangan.
+*!blackjackstatus*: ℹ️ Ndelok status game saiki, termasuk kartu kabeh pemain lan kartu dealer seng ketok.
+
+*📜 **TUJUAN & ATURAN DASAR** ♠️*
+*Tujuan*: Entukno nilai kartu seng paling cedek karo 21 tapi ojok sampek luwih. Nilaimu kudu luwih duwur teko dealer ben menang.
+*Nilai Kartu*:
+  - Kartu 2-10: Sesuai angkane.
+  - Kartu J, Q, K: Nilai 10.
+  - Kartu As (A): Nilai 1 utowo 11 (otomatis milih seng paling apik gawe kon).
+*Blackjack*: Langsung entuk 21 (As + kartu nilai 10) pas kartu awal dibagi. Bayarane 1.5x lipat teko taruhanmu!
+*Bust*: Nilai kartumu luwih teko 21. Langsung kalah neng ronde iku.
+*Push*: Nilai kartumu podo karo dealer. Taruhanmu mbalik.
+*Aturan Dealer*: Dealer kudu \`!hit\` terus sampek nilai kartune 17 utowo luwih.
+
+**Selamat Bermain & Semoga Beruntung!**`
           );
           return;
         } else {
