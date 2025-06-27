@@ -57,6 +57,12 @@ const requestHeader = {
 
 export const client = new Client({
   authStrategy: new LocalAuth(),
+  webVersionCache: {
+    // fixes serialization issue undefined
+    remotePath:
+      "https://raw.githubusercontent.com/wppconnect-team/wa-version/refs/heads/main/html/2.3000.1024212402-alpha.html",
+    type: "remote",
+  },
   puppeteer: {
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],

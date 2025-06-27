@@ -1,11 +1,19 @@
 import axios, { AxiosError } from "axios";
 import { MessageMedia } from "whatsapp-web.js";
-import { contents, students } from "../data";
+import { contents } from "../data";
 import {
   AdminDetailResponse,
   AdminShufflePfpResponse,
+  Deck,
   GroupKelompok,
+  UnoGameSession,
 } from "./type";
+import { COLORS, VALUES } from "./const";
+
+const fs = require("fs");
+const path = require("path");
+
+let wordsCache = null;
 
 export const rotateArrays = (endDate: Date, startDate: Date) => {
   const msInWeek = 7 * 24 * 60 * 60 * 1000;
@@ -246,4 +254,118 @@ export const createGroups = (
   }
 
   return groups;
+};
+
+export const getWordsFromFile = () => {
+  if (wordsCache) {
+    return wordsCache;
+  }
+  try {
+    const WORD_FILE_PATH = path.join(__dirname, "words.txt");
+    console.log(WORD_FILE_PATH);
+    const fileContent = fs.readFileSync(WORD_FILE_PATH, "utf8");
+    const words = fileContent.split("\n").filter(Boolean);
+    if (words.length > 0) {
+      wordsCache = words;
+      return words;
+    }
+    return [];
+  } catch (error) {
+    console.error(
+      "Error: Could not read 'words.txt'. Make sure it's in the same directory as your script."
+    );
+    return [];
+  }
+};
+
+export const generateRandomWords = (amount = 1) => {
+  const allWords = getWordsFromFile();
+  if (allWords.length === 0) {
+    return ["Word list unavailable."];
+  }
+  const result = [];
+  const maxIndex = allWords.length;
+  for (let i = 0; i < amount; i++) {
+    const randomIndex = Math.floor(Math.random() * maxIndex);
+    // @ts-ignore
+    result.push(allWords[randomIndex]);
+  }
+  return result;
+};
+
+// ---- start uno same variable controllers ----
+
+export function createNewUnoSession(): UnoGameSession {
+  return {
+    isInLobby: false,
+    isGameStarted: false,
+    players: [],
+    host: "",
+    currentPlayerIndex: 0,
+    playerHands: {},
+    deck: [],
+    discardPile: [],
+    currentColor: "",
+    direction: 1,
+    cardsToDraw: 0,
+    inactivityTimer: null,
+  };
+}
+
+export const createUnoDeck = () => {
+  const deck: Deck[] = [];
+  const colors = [COLORS.RED, COLORS.GREEN, COLORS.BLUE, COLORS.YELLOW];
+
+  for (const color of colors) {
+    deck.push({ color, value: VALUES.ZERO });
+
+    for (let i = 1; i <= 9; i++) {
+      deck.push({ color, value: String(i) });
+      deck.push({ color, value: String(i) });
+    }
+
+    for (const action of [VALUES.SKIP, VALUES.REVERSE, VALUES.DRAW_TWO]) {
+      deck.push({ color, value: action });
+      deck.push({ color, value: action });
+    }
+  }
+
+  for (let i = 0; i < 4; i++) {
+    deck.push({ color: COLORS.WILD, value: VALUES.WILD });
+    deck.push({ color: COLORS.WILD, value: VALUES.WILD_DRAW_FOUR });
+  }
+
+  return deck;
+};
+
+export const shuffle = (array) => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+};
+
+export const formatCard = (card) => {
+  if (!card) return "Tidak ada kartu";
+  return `${card.color} ${card.value}`;
+};
+
+// ---- end uno same variable controllers ----
+
+export const parseTime = (timeArg) => {
+  const unit = timeArg.slice(-1);
+  const value = parseInt(timeArg.slice(0, -1));
+
+  if (isNaN(value)) return null;
+
+  switch (unit) {
+    case "m":
+      return value * 60 * 1000;
+    case "h":
+      return value * 60 * 60 * 1000;
+    case "d":
+      return value * 24 * 60 * 60 * 1000;
+    default:
+      return null;
+  }
 };

@@ -355,3 +355,42 @@ export interface Deck {
   color: string;
   value: string;
 }
+
+export interface Participant {
+  server: string;
+  user: string;
+  _serialized: string;
+}
+
+export interface MessageID {
+  fromMe: boolean;
+  remote: string;
+  id: string;
+  participant: Participant;
+  _serialized: string;
+}
+
+export interface SavedMsg {
+  name: string;
+  body: string;
+}
+
+export interface Card {
+  color: string;
+  value: string;
+}
+
+export interface UnoGameSession {
+  isInLobby: boolean;
+  isGameStarted: boolean;
+  players: string[];
+  host: string;
+  currentPlayerIndex: number;
+  playerHands: Record<string, Card[]>;
+  deck: Card[];
+  discardPile: Card[];
+  currentColor: string;
+  direction: 1 | -1;
+  cardsToDraw: number;
+  inactivityTimer: NodeJS.Timeout | null;
+}
