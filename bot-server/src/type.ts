@@ -355,3 +355,79 @@ export interface Deck {
   color: string;
   value: string;
 }
+
+export interface Participant {
+  server: string;
+  user: string;
+  _serialized: string;
+}
+
+export interface MessageID {
+  fromMe: boolean;
+  remote: string;
+  id: string;
+  participant: Participant;
+  _serialized: string;
+}
+
+export interface SavedMsg {
+  name: string;
+  body: string;
+}
+
+export interface Card {
+  color: string;
+  value: string;
+}
+
+export interface LeaderboardEntry {
+  playerName: string;
+  playerId: string;
+  rank: number | "DNF" | "Last";
+}
+
+export interface UnoGameSession {
+  isInLobby: boolean;
+  isGameStarted: boolean;
+  players: string[];
+  originalPlayers: string[];
+  host: string | null;
+  currentPlayerIndex: number;
+  playerHands: Record<string, Card[]>;
+  deck: Card[];
+  discardPile: Card[];
+  currentColor: string;
+  direction: 1 | -1;
+  cardsToDraw: number;
+  inactivityTimer: NodeJS.Timeout | null;
+  allowCardStacking: boolean;
+  leaderboard: LeaderboardEntry[];
+  unoTarget: string | null;
+}
+
+export interface BlackjackCard {
+  suit: string;
+  rank: string;
+}
+
+export interface PlayerState {
+  id: string;
+  name: string;
+  hand: BlackjackCard[];
+  chips: number;
+  bet: number;
+  status: "playing" | "busted" | "stand" | "blackjack" | "waiting";
+}
+
+export interface BlackjackGameSession {
+  isInLobby: boolean;
+  isGameStarted: boolean;
+  players: Record<string, PlayerState>;
+  playerOrder: string[];
+  host: string;
+  currentPlayerIndex: number;
+  dealerHand: BlackjackCard[];
+  deck: BlackjackCard[];
+  gamePhase: "betting" | "player_turn" | "dealer_turn" | "payout" | "ended";
+  startingChips: number;
+}
