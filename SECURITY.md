@@ -1,3 +1,3 @@
 # Security Policy
 
-pokokya jangan mbledos
+pokoknya jangan mbledos
