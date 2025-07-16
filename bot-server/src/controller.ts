@@ -9,6 +9,7 @@ import {
   Card,
   Deck,
   GroupKelompok,
+  MarbleRunGameSession,
   UnoGameSession,
 } from "./type";
 import { COLORS, RANKS, SUITS, VALUES } from "./const";
@@ -368,6 +369,8 @@ export function createNewBlackjackSession(): BlackjackGameSession {
     deck: [],
     gamePhase: "ended",
     startingChips: 0,
+    inactivityTimer: null,
+    leaderboard: [],
   };
 }
 
@@ -438,4 +441,21 @@ export const parseTime = (timeArg) => {
     default:
       return null;
   }
+};
+
+export function createNewMarbleRunSession(open): MarbleRunGameSession {
+  return {
+    isOpen: open,
+    players: [],
+    timer: null,
+  };
+}
+export const marbleRun = (players) => {
+
+  for (let i = players.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [players[i], players[j]] = [players[j], players[i]];
+  }
+
+  return players;
 };

@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* .bg-main { */
+/* background-image: linear-gradient(
+    170deg,
+    rgb(0, 0, 0) 0%,
+    oklch(39.8% 0.195 277.366) 40%,
+    oklch(42.4% 0.199 265.638) 60%,
+    oklch(54.1% 0.281 293.009) 70%,
+    oklch(44.3% 0.11 240.79) 95%
+  );
+} */
+
+@layer base {
+  body {
+    @apply text-white;
+  }
+}
+
+.bg-main {
+  background-color: #23272a;
+}
+
+.bg-features-gradient {
+  background-image: linear-gradient(
+    170deg,
+    #23272a 0%,
+    #2c2f33 40%,
+    #2c2f33 60%,
+    #23272a 95%
+  );
+}
+
+.bg-how-to-use-gradient {
+  background-image: linear-gradient(
+    170deg,
+    #23272a 0%,
+    #1a1d1f 50%,
+    #23272a 100%
+  );
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+  opacity: 0;
+}

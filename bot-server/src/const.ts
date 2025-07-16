@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 export const COLORS = {
   RED: "🟥 RED",
   GREEN: "🟩 GREEN",

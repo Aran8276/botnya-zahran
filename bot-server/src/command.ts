@@ -21,6 +21,8 @@ import {
   getHandValue,
   formatCardBlackjack,
   shuffleBlackjack,
+  createNewMarbleRunSession,
+  marbleRun,
 } from "./controller";
 import { students } from "../data";
 import {
@@ -36,10 +38,13 @@ import { client } from "../main";
 import { GoogleGenAI } from "@google/genai";
 import { videoData } from "./badApple.data";
 import { COLORS, laravelUrl, nextJsUrl, requestHeader, VALUES } from "./const";
+require("dotenv").config();
+const fs = require("fs");
 
 export const activeReminders = {};
 
 let unoGameSession = createNewUnoSession();
+let marbleGameSession = createNewMarbleRunSession(false);
 
 const getTopCard = () => {
   if (unoGameSession.discardPile.length === 0) return null;
@@ -78,15 +83,17 @@ const resetInactivityTimer = (chat) => {
   }
 
   const TEN_MINUTES_MS = 10 * 60 * 1000;
+  // const TEN_MINUTES_MS = 3000;
 
   unoGameSession.inactivityTimer = setTimeout(async () => {
-    if (unoGameSession.isGameStarted) {
-      chat.sendMessage(
-        "⏰ Permainan UNO telah berakhir karena tidak ada aktivitas setelah 10 menit."
-      );
-      await endAndShowLeaderboard(chat);
-      unoGameSession = createNewUnoSession();
-    }
+    // if (unoGameSession.isGameStarted) {
+    // }
+
+    chat.sendMessage(
+      "⏰ Permainan UNO telah berakhir karena tidak ada aktivitas setelah 10 menit."
+    );
+    await endAndShowLeaderboard(chat);
+    unoGameSession = createNewUnoSession();
   }, TEN_MINUTES_MS);
 };
 
@@ -139,6 +146,27 @@ const endAndShowLeaderboard = async (chat) => {
 // ---- start blackjack same variable controllers ----
 let blackjackGameSession = createNewBlackjackSession();
 
+const blackjackResetInactivityTimer = (chat) => {
+  if (blackjackGameSession.inactivityTimer) {
+    clearTimeout(blackjackGameSession.inactivityTimer);
+  }
+
+  const TEN_MINUTES_MS = 10 * 60 * 1000;
+  // const TEN_MINUTES_MS = 10000;
+
+  blackjackGameSession.inactivityTimer = setTimeout(async () => {
+    // if (unoGameSession.isGameStarted) {
+    // }
+
+    chat.sendMessage(
+      "⏰ Permainan Blackjack telah berakhir karena tidak ada aktivitas setelah 10 menit."
+    );
+
+    await endBlackjackGame(chat);
+    blackjackGameSession = createNewBlackjackSession();
+  }, TEN_MINUTES_MS);
+};
+
 const getHandString = (hand: BlackjackCard[]) =>
   hand.map(formatCardBlackjack).join(" ");
 
@@ -151,7 +179,7 @@ const checkAllPlayersBet = async (chat) => {
   );
 
   if (allBet && activePlayers.length > 0) {
-    await chat.sendMessage("Kabeh wes masang bet! Kartu dibagi saiki...");
+    await chat.sendMessage("Semua telah menaruh bet! Kartu akan dibagi...");
     await dealInitialCards(chat);
   }
 };
@@ -178,7 +206,7 @@ const dealInitialCards = async (chat) => {
     blackjackGameSession.dealerHand.push(blackjackGameSession.deck.pop()!);
   }
 
-  let dealMessage = `Dealer e nunjukno: *${formatCardBlackjack(
+  let dealMessage = `Kartu Dealer: *${formatCardBlackjack(
     blackjackGameSession.dealerHand[0]
   )}*\n\nKartu Pemain:\n`;
   const mentions: any[] = [];
@@ -203,7 +231,7 @@ const dealInitialCards = async (chat) => {
   const dealerValue = getHandValue(blackjackGameSession.dealerHand);
   if (dealerValue === 21) {
     await chat.sendMessage(
-      `Dealer duwe Blackjack! Tangane: ${getHandString(
+      `Dealer memiliki kartu Blackjack! Tangan: ${getHandString(
         blackjackGameSession.dealerHand
       )}`
     );
@@ -240,11 +268,14 @@ const advanceToNextPlayer = async (chat) => {
     await chat.sendMessage(
       `Giliranmu, @${contact.id.user}!\nKartumu: *${getHandString(
         player.hand
-      )}* (Nilai: *${handValue}*).\nKetik *!hit* opo *!stand*.`,
+      )}* (Nilai: *${handValue}*).\nKetik *!hit* atau *!stand*.`,
       { mentions: [contact] }
     );
+
+    return;
   } else {
     await dealerTurn(chat);
+    return;
   }
 };
 
@@ -252,7 +283,7 @@ const dealerTurn = async (chat) => {
   blackjackGameSession.gamePhase = "dealer_turn";
   let dealerValue = getHandValue(blackjackGameSession.dealerHand);
 
-  let dealerMessage = `Kabeh pemain wes rampung. Saiki gilirane dealer.\nDealer mbukak kartu: *${getHandString(
+  let dealerMessage = `Semua pemain telah memasang bet. Sekarang giliran dealer.\nDealer membuka kartu: *${getHandString(
     blackjackGameSession.dealerHand
   )}* (Nilai: *${dealerValue}*)`;
   await chat.sendMessage(dealerMessage);
@@ -263,9 +294,9 @@ const dealerTurn = async (chat) => {
     blackjackGameSession.dealerHand.push(newCard);
     dealerValue = getHandValue(blackjackGameSession.dealerHand);
     await chat.sendMessage(
-      `Dealer ngambil kartu... entuk *${formatCardBlackjack(
+      `Dealer mengambil kartu... dan mendapatkan *${formatCardBlackjack(
         newCard
-      )}*.\nSaiki tangane: *${getHandString(
+      )}*.\nTangan dealer: *${getHandString(
         blackjackGameSession.dealerHand
       )}* (Nilai: *${dealerValue}*)`
     );
@@ -283,9 +314,9 @@ const processPayouts = async (chat) => {
   const dealerValue = getHandValue(blackjackGameSession.dealerHand);
   const isDealerBust = dealerValue > 21;
 
-  let summaryMessage = `*--- Hasil Ronde ---*\nDealer duwe nilai *${
+  let summaryMessage = `*--- Hasil Ronde ---*\nDealer memiliki kartu bernilai *${
     isDealerBust ? "BUST" : dealerValue
-  }* karo kartu ${getHandString(blackjackGameSession.dealerHand)}\n\n`;
+  }* dan kartu ${getHandString(blackjackGameSession.dealerHand)}\n\n`;
   const mentions: any[] = [];
 
   for (const pId of blackjackGameSession.playerOrder) {
@@ -312,15 +343,15 @@ const processPayouts = async (chat) => {
       summaryMessage += `*Bust!* Kalah *${player.bet}* chips.\n`;
     } else if (isDealerBust) {
       player.chips += player.bet;
-      summaryMessage += `*Menang!* Dapet *${player.bet}* chips.\n`;
+      summaryMessage += `*Menang!* Dapat *${player.bet}* chips.\n`;
     } else if (playerValue > dealerValue) {
       player.chips += player.bet;
-      summaryMessage += `*Menang!* Dapet *${player.bet}* chips.\n`;
+      summaryMessage += `*Menang!* Dapat *${player.bet}* chips.\n`;
     } else if (playerValue < dealerValue) {
       player.chips -= player.bet;
-      summaryMessage += `*Kalah!* Ilang *${player.bet}* chips.\n`;
+      summaryMessage += `*Kalah!* Kalah sebanyak *${player.bet}* chips.\n`;
     } else {
-      summaryMessage += `*Push!* Bet e mbalik.\n`;
+      summaryMessage += `*Push!* Bet kembali.\n`;
     }
   }
 
@@ -345,7 +376,9 @@ const startNewRound = async (chat) => {
   });
 
   if (activePlayers.length < 1) {
-    await chat.sendMessage("Ora onok pemain seng duwe chip. Game buyar!");
+    await chat.sendMessage(
+      "Tidak ada pemain yang memiliki chips. Game selesai!"
+    );
     await endBlackjackGame(chat);
     return;
   }
@@ -362,7 +395,7 @@ const startNewRound = async (chat) => {
     player.status = player.chips > 0 ? "waiting" : "busted";
   }
 
-  statusMessage += `\nSilahkan pasang bet samean nganggo \`!bet [jumlah]\`.`;
+  statusMessage += `\nSilakan pasang bet, anda memiliki \`!bet [jumlah]\`.`;
 
   const playerContacts = await Promise.all(
     blackjackGameSession.playerOrder.map((pId) => client.getContactById(pId))
@@ -739,7 +772,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
     case "!unocreate":
       if (unoGameSession.isInLobby || unoGameSession.isGameStarted) {
         message.reply(
-          "Onok sesi UNO. Pake `!unoend` utk dimbledosin dulu yah."
+          "Ada sesi UNO. Gunakan `!unoend` untuk menyelesaikan permainan UNO dulu yah."
         );
         return;
       }
@@ -748,21 +781,23 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         argsCreate[0]?.toLowerCase() !== "disallow_cardstack";
 
       unoGameSession = createNewUnoSession();
+      resetInactivityTimer(chat);
       unoGameSession.allowCardStacking = allowCardStacking;
       unoGameSession.isInLobby = true;
       const hostContact = await message.getContact();
       unoGameSession.host = hostContact.id._serialized;
       unoGameSession.players.push(hostContact.id._serialized);
 
-      let lobbyMessage = `Lobi UNO wes dibuat ambek @${hostContact.id.user}!\n`;
+      let lobbyMessage = `Lobi UNO telah dibuat oleh @${hostContact.id.user}!\n`;
       lobbyMessage += `Aturan Card Stacking: *${
         allowCardStacking ? "Diperbolehkan" : "Tidak Diperbolehkan"
       }*\n\n`;
-      lobbyMessage += `Ketik o *!unojoin* nek samean mau join.`;
+      lobbyMessage += `Ketik *!unojoin* jika anda ingin bergabung.\ndan mulai permainan Blackjack dengan mengetik *!unostart* (minimal 2 pemain) \n\n_Lobi ini akan dihapus jika tidak dimulai dalam jangka 10 menit_\nGunakan *!unoend* untuk membatalkan permainan ini.`;
 
       chat.sendMessage(lobbyMessage, {
         mentions: [hostContact.id._serialized],
       });
+
       break;
     case "!unojoin":
       if (unoGameSession.isGameStarted) {
@@ -771,7 +806,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       }
 
       if (!unoGameSession.isInLobby) {
-        message.reply("Ora onok sesi uno seng jalan. ❌");
+        message.reply("Tidak ada sesi uno yang berlangsung. ❌");
         return;
       }
 
@@ -779,13 +814,13 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       const newPlayerId = newPlayerContact.id._serialized;
 
       if (unoGameSession.players.includes(newPlayerId)) {
-        message.reply("Kon wes join rek!");
+        message.reply("Anda telah join!");
         return;
       }
 
       unoGameSession.players.push(newPlayerId);
       chat.sendMessage(
-        `@${newPlayerContact.id.user} wes gabung ndek game UNO iki!`,
+        `@${newPlayerContact.id.user} telah bergabung di game UNO!`,
         {
           mentions: [newPlayerContact.id._serialized],
         }
@@ -794,26 +829,30 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
     case "!unostart":
       const requesterId2 = (await message.getContact()).id._serialized;
       if (requesterId2 !== unoGameSession.host) {
-        message.reply("Host ae seng isok mulai game.");
+        message.reply("Hanya host yang dapat memulai game.");
         return;
       }
 
       if (!unoGameSession.isInLobby) {
-        message.reply("Ora onok lobi UNO. Buat o seng baru ndek `!unocreate`.");
+        message.reply(
+          "Tidak ada sesi UNO yang berjalan, gunakan `!unocreate` untuk membuatnya."
+        );
         return;
       }
 
       if (unoGameSession.isGameStarted) {
-        message.reply("Game wes jalan!");
+        message.reply("Game telah jalan!");
         return;
       }
 
-      // if (unoGameSession.players.length < 2) {
-      //   message.reply(
-      //     "Anda membutuhkan minimal 2 pemain untuk menjalankan UNO."
-      //   );
-      //   return;
-      // }
+      if (process.env.UNO_SINGLEPLAYER_ENABLED === "0") {
+        if (unoGameSession.players.length < 2) {
+          message.reply(
+            "Anda membutuhkan minimal 2 pemain untuk menjalankan UNO."
+          );
+          return;
+        }
+      }
 
       unoGameSession.isInLobby = false;
       unoGameSession.isGameStarted = true;
@@ -840,7 +879,8 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
       unoGameSession.currentColor = firstCard?.color || "RED";
 
-      let startMessage = "🎉 Permainan UNO telah dimulai! 🎉\n\n";
+      let startMessage =
+        "🎉 Permainan UNO telah dimulai! 🎉\n\nGunakan *!unoend* untuk menghentikan sesi sebagai host.\nGunakan *!unoleave* untuk keluar sebagai pemain.";
       startMessage += `Urutan pemain:\n${unoGameSession.players
         .map((p, i) => `${i + 1}. @${p.split("@")[0]}`)
         .join("\n")}\n\n`;
@@ -924,7 +964,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         unoGameSession.players[unoGameSession.currentPlayerIndex] !==
         drawPlayerId
       ) {
-        message.reply("Duduk giliran mu rek!");
+        message.reply("Belum giliran mu!");
         return;
       }
 
@@ -942,18 +982,18 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
       unoGameSession.cardsToDraw = 0;
 
-      await message.reply(`Kon ngedraw kartu ${cardsToDraw}`);
+      await message.reply(`Anda mengambil kartu ${cardsToDraw}`);
       await advanceTurn(chat);
       break;
     case "!unoend":
       if (!unoGameSession.isInLobby && !unoGameSession.isGameStarted) {
-        message.reply("Ora onok game UNO seng jalan mas / mbak e.");
+        message.reply("Tidak ada permainan UNO yang jalan.");
         return;
       }
 
       const requesterId = (await message.getContact()).id._serialized;
       if (unoGameSession.host !== null && requesterId !== unoGameSession.host) {
-        message.reply("Tanyak o host utk stop.");
+        message.reply("Hanya host yang bisa menghentikan.");
         return;
       }
 
@@ -971,6 +1011,8 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
       const leavingPlayerContact = await message.getContact();
       const leavingPlayerId = leavingPlayerContact.id._serialized;
+
+      message.reply(JSON.stringify(unoGameSession.players, null, 2));
 
       if (!unoGameSession.players.includes(leavingPlayerId)) {
         message.reply("Anda tidak sedang dalam permainan ini.");
@@ -1027,7 +1069,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       break;
     case "!unostatus":
       if (!unoGameSession.isGameStarted) {
-        message.reply("Ora onok game UNO seng jalan mas / mbak e.");
+        message.reply("Tidak ada game UNO yang berlangsung.");
         return;
       }
 
@@ -1117,15 +1159,13 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       }
       break;
 
-    // --- START BLACKJACK CODE ----
-
     case "!blackjackjoin":
       if (blackjackGameSession.isGameStarted) {
-        message.reply("Game wes jalan. Ndak boleh gabung ❌.");
+        message.reply("Game sudah jalan. Anda tidak bisa gabung ❌.");
         return;
       }
       if (!blackjackGameSession.isInLobby) {
-        message.reply("Ora onok lobi Blackjack seng aktif. ❌");
+        message.reply("Tidak ada lobi Blackjack yang berlangsung. ❌");
         return;
       }
 
@@ -1133,7 +1173,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       const newPlayerIdBlackjack = newPlayerContactBlackjack.id._serialized;
 
       if (blackjackGameSession.players[newPlayerIdBlackjack]) {
-        message.reply("Kon wes join rek!");
+        message.reply("Anda telah bergabung!");
         return;
       }
 
@@ -1150,7 +1190,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       blackjackGameSession.playerOrder.push(newPlayerIdBlackjack);
 
       chat.sendMessage(
-        `@${newPlayerContactBlackjack.id.user} wes gabung ndek meja Blackjack!`,
+        `@${newPlayerContactBlackjack.id.user} telah bergabung di meja Blackjack!`,
         // @ts-ignore
         { mentions: [newPlayerContactBlackjack] }
       );
@@ -1159,35 +1199,40 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
     case "!blackjackstart":
       const requesterIdStart = (await message.getContact()).id._serialized;
       if (requesterIdStart !== blackjackGameSession.host) {
-        message.reply("Host ae seng isok mulai game.");
+        message.reply("Hanya host yang bisa memulai.");
         return;
       }
       if (!blackjackGameSession.isInLobby) {
-        message.reply("Ora onok lobi, gae sek `!blackjackcreate`.");
+        message.reply(
+          "Tidak ada lobi, buat yang baru command dengan `!blackjackcreate`."
+        );
         return;
       }
 
       blackjackGameSession.isInLobby = false;
       blackjackGameSession.isGameStarted = true;
-      await chat.sendMessage("🎉 Game Blackjack dimulai! 🎉");
+      await chat.sendMessage(
+        "🎉 Game Blackjack telah dimulai! 🎉\n\nGunakan *!blackjackend* untuk menghentikan sesi sebagai host.\nGunakan *!blackjackleave* untuk keluar sebagai pemain."
+      );
       await startNewRound(chat);
       break;
 
     case "!hit":
       if (!blackjackGameSession.isGameStarted) return;
+      blackjackResetInactivityTimer(chat);
       const hitPlayerId = (await message.getContact()).id._serialized;
       if (
         blackjackGameSession.playerOrder[
           blackjackGameSession.currentPlayerIndex
         ] !== hitPlayerId
       ) {
-        message.reply("Duduk giliranmu rek!");
+        message.reply("Bukan giliranmu!");
         return;
       }
 
       const playerHit = blackjackGameSession.players[hitPlayerId];
       if (playerHit.status !== "playing") {
-        message.reply("Kon wes stand opo bust, rak isoh hit.");
+        message.reply("Anda telah stand atau bust, tidak bisa hit.");
         return;
       }
       const newCard = blackjackGameSession.deck.pop()!;
@@ -1195,16 +1240,16 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       const handValue = getHandValue(playerHit.hand);
 
       await message.reply(
-        `Kon entuk *${formatCardBlackjack(
+        `Anda mendapat *${formatCardBlackjack(
           newCard
-        )}*.\nSaiki kartumu: *${getHandString(
+        )}*.\nSekarang kartumu: *${getHandString(
           playerHit.hand
-        )}* (Nilai: *${handValue}*)`
+        )}* (Nilai: *${handValue}*)\nPilih *!hit* atau *!stand*`
       );
 
       if (handValue > 21) {
         playerHit.status = "busted";
-        await message.reply("BUST! Kon kalah neng ronde iki.");
+        await message.reply("BUST! Anda kalah di ronde ini.");
         await advanceToNextPlayer(chat);
       } else if (handValue === 21) {
         playerHit.status = "stand";
@@ -1215,29 +1260,30 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
     case "!stand":
       if (!blackjackGameSession.isGameStarted) return;
+      blackjackResetInactivityTimer(chat);
       const standPlayerId = (await message.getContact()).id._serialized;
       if (
         blackjackGameSession.playerOrder[
           blackjackGameSession.currentPlayerIndex
         ] !== standPlayerId
       ) {
-        message.reply("Duduk giliranmu rek!");
+        message.reply("Belum giliranmu!");
         return;
       }
 
       const playerStand = blackjackGameSession.players[standPlayerId];
       if (playerStand.status !== "playing") {
-        message.reply("Kon wes stand opo bust.");
+        message.reply("Anda telah stand atau bust.");
         return;
       }
       playerStand.status = "stand";
-      await message.reply("Kon milih stand.");
+      await message.reply("Anda memilih stand.");
       await advanceToNextPlayer(chat);
       break;
 
     case "!blackjackhand":
       if (!blackjackGameSession.isGameStarted) {
-        message.reply("Game durung mulai.");
+        message.reply("Game belum dimulai.");
         return;
       }
       const handPlayerContact = await message.getContact();
@@ -1245,20 +1291,22 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
       const playerHandBlackjack = blackjackGameSession.players[handPlayerId];
 
       if (!playerHandBlackjack) {
-        message.reply("Kon ora melu main.");
+        message.reply("Anda tidak ikut bermain.");
         return;
       }
 
-      let handMessageBlackjack = `Chip mu: *${playerHandBlackjack.chips}*\nBet mu: *${playerHandBlackjack.bet}*\n\n`;
+      blackjackResetInactivityTimer(chat);
+
+      let handMessageBlackjack = `Chip anda: *${playerHandBlackjack.chips}*\nBet anda: *${playerHandBlackjack.bet}*\n\n`;
       if (playerHandBlackjack.hand.length > 0) {
         handMessageBlackjack += `Kartumu: *${getHandString(
           playerHandBlackjack.hand
         )}* (Nilai: *${getHandValue(playerHandBlackjack.hand)}*)\n`;
       } else {
-        handMessageBlackjack += "Kon durung duwe kartu.\n";
+        handMessageBlackjack += "Anda belum memiliki kartu.\n";
       }
       if (blackjackGameSession.dealerHand.length > 0) {
-        handMessageBlackjack += `Kartu dealer seng ketok: *${formatCardBlackjack(
+        handMessageBlackjack += `Kartu mendapat: *${formatCardBlackjack(
           blackjackGameSession.dealerHand[0]
         )}*`;
       }
@@ -1268,13 +1316,13 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
     case "!blackjackstatus":
       if (!blackjackGameSession.isGameStarted) {
-        message.reply("Ora onok game Blackjack seng jalan.");
+        message.reply("Belum ada game Blackjack yang sedang berlangsung.");
         return;
       }
 
       let statusMsgBlackjack = `*--- Status Meja Blackjack ---*\nFase: *${blackjackGameSession.gamePhase.toUpperCase()}*\n`;
       if (blackjackGameSession.dealerHand.length > 0) {
-        statusMsgBlackjack += `Dealer e nunjukno: *${
+        statusMsgBlackjack += `Dealer menunjukan: *${
           blackjackGameSession.gamePhase === "player_turn"
             ? formatCardBlackjack(blackjackGameSession.dealerHand[0])
             : getHandString(blackjackGameSession.dealerHand)
@@ -1301,10 +1349,104 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
     case "!blackjackend":
       const requesterIdEnd = (await message.getContact()).id._serialized;
       if (requesterIdEnd !== blackjackGameSession.host) {
-        message.reply("Host ae seng isok mbuyarno game.");
+        message.reply("Hanya host yang dapat mengakhiri permainan.");
         return;
       }
       await endBlackjackGame(chat);
+      break;
+
+    case "!marblerun":
+      if (marbleGameSession.isOpen) {
+        message.reply(
+          "❌ Permainan Marble Run sedang berlangsung di chat lain atau di chat ini. Coba gabung dengan *!play*"
+        );
+
+        return;
+      }
+
+      marbleGameSession = createNewMarbleRunSession(true);
+
+      message.reply(
+        "🔵🟡🔴✅ Permainan Marble Run telah dibuat. Akan dimulai dalam 120 detik! Ketik *!play* untuk gabung."
+      );
+
+      // cancel here
+      // if (unoGameSession.inactivityTimer) {
+      //   clearTimeout(unoGameSession.inactivityTimer);
+      // }
+
+      // const TWO_MINS_MS = 120 * 1000;
+      const TWO_MINS_MS = 30 * 1000;
+
+      marbleGameSession.timer = setTimeout(async () => {
+        if (marbleGameSession.players.length <= 1) {
+          chat.sendMessage(
+            "💥 Pemain Marble Run dibatalkan karena pemain kurang dari 2."
+          );
+          return;
+        }
+
+        const results: string[] = marbleRun(marbleGameSession.players);
+
+        const playerList = results
+          .map((item, index) => `${index + 1}. @${item.split("@")[0]}`)
+          .join("\n");
+
+        await chat.sendMessage(
+          `🔴 Hasil Permainan Marble Run 🔴:\n\n${playerList}\n\nPemenang 🥇: @${
+            results[0].split("@")[0]
+          }`,
+          {
+            mentions: [
+              results[0],
+              ...marbleGameSession.players.map((item) => item),
+            ],
+          }
+        );
+
+        marbleGameSession = createNewMarbleRunSession(false);
+        return;
+
+        // chat.sendMessage(JSON.stringify(results, null, 2));
+      }, TWO_MINS_MS);
+
+      break;
+
+    case "!play":
+      if (!marbleGameSession.isOpen) {
+        message.reply(
+          "Tidak ada permainan Marble Run sekarang! Buat baru dengan *!marblerun*"
+        );
+        return;
+      }
+
+      const marblePlayerContact = await message.getContact();
+      const marblePlayerId = marblePlayerContact.id._serialized;
+
+      if (marbleGameSession.players.includes(marblePlayerId)) {
+        message.reply("Anda telah gabung di permainan Marble Run ini!");
+        return;
+      }
+
+      marbleGameSession.players.push(marblePlayerId);
+
+      // const response = args.join(" ");
+      // const mentionsString = groupChatObj.participants
+      //   .map((item) => `@${item.id.user}`)
+      //   .join(" ");
+
+      // await chat.sendMessage(`${mentionsString} ${response}`, {
+      //   mentions: groupChatObj.participants.map((item) => item.id._serialized),
+      // });
+
+      const playerList = marbleGameSession.players
+        .map((item) => `- @${item.split("@")[0]}`)
+        .join("\n");
+
+      await chat.sendMessage(`🔵 Daftar Pemain Marble 🔵:\n\n${playerList}`, {
+        mentions: marbleGameSession.players.map((item) => item),
+      });
+
       break;
 
     default:
@@ -1313,7 +1455,9 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
           blackjackGameSession.isInLobby ||
           blackjackGameSession.isGameStarted
         ) {
-          message.reply("Wes onok sesi Blackjack. Pake `!blackjackend` disik.");
+          message.reply(
+            "Masih ada sesi permainan Blackjack. Gunakan `!blackjackend` untuk menyelesaikannya."
+          );
           return;
         }
         const argsCreateBlackjack = message.body.split(" ").slice(1);
@@ -1322,7 +1466,9 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 
         if (!allowedChips.includes(startingChips)) {
           message.reply(
-            `Chip e salah. Pilih siji: ${allowedChips.join(", ")}.`
+            `Anda ingin memulai game Blackjack. Pilih salah satu opsi starter chip: ${allowedChips.join(
+              ", "
+            )}.`
           );
           return;
         }
@@ -1346,17 +1492,18 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         blackjackGameSession.playerOrder.push(hostId);
 
         chat.sendMessage(
-          `Lobi Blackjack wes dibuat ambek @${hostContactBlackjack.id.user}!\nStarting Chips: *${startingChips}*.\n\nKetik *!blackjackjoin* nek samean mau join.`,
+          `Lobi Blackjack telah dibuat oleh @${hostContactBlackjack.id.user}!\nStarting Chips: *${startingChips}*.\n\nKetik *!blackjackjoin* jika anda ingin bergabung.\ndan mulai permainan Blackjack dengan mengetik *!blackjackstart*\n(minimal 1 pemain alias bisa solo)\n\n_Lobi ini akan dihapus jika tidak dimulai dalam jangka 10 menit_\nGunakan *!blackjackend* untuk membatalkan permainan ini.`,
           // @ts-ignore
           { mentions: [hostContactBlackjack] }
         );
+
+        blackjackResetInactivityTimer(chat);
         return;
       }
 
-      // --- END BLACKJACK CODE ----
       if (command === "!bet") {
         if (blackjackGameSession.gamePhase !== "betting") {
-          message.reply("Durung wayahe masang bet.");
+          message.reply("Belum saatnya untuk memasang bet.");
           return;
         }
 
@@ -1365,33 +1512,37 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         const player = blackjackGameSession.players[betPlayerId];
 
         if (!player) {
-          message.reply("Kon ora melu main.");
+          message.reply("Anda tidak ikut bermain.");
           return;
         }
         if (player.bet > 0) {
-          message.reply("Kon wes masang bet.");
+          message.reply("Anda telah memasang bet.");
           return;
         }
+
+        blackjackResetInactivityTimer(chat);
 
         const argsBet = message.body.split(" ").slice(1);
         const betAmount = parseInt(argsBet[0], 10);
 
         if (isNaN(betAmount) || betAmount <= 0) {
-          message.reply("Jumlah bet e ora valid.");
+          message.reply("Jumlah betting tidak valid.");
           return;
         }
         if (betAmount > player.chips) {
-          message.reply(`Chip mu ora cukup! Chip mu mek ${player.chips}.`);
+          message.reply(`Chip tidak cukup! Chip anda hanya ${player.chips}.`);
           return;
         }
 
         player.bet = betAmount;
         await chat.sendMessage(
-          `@${betPlayerContact.id.user} masang bet *${betAmount}* chips.`,
+          `@${betPlayerContact.id.user} menaruh bet sebesar *${betAmount}* chips.`,
           // @ts-ignore
           { mentions: [betPlayerContact] }
         );
         await checkAllPlayersBet(chat);
+
+        return;
       }
 
       if (command == "!place") {
@@ -1410,13 +1561,13 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
           unoGameSession.players[unoGameSession.currentPlayerIndex] !==
           placePlayerId
         ) {
-          message.reply("Duduk waktu e kon! Nunggu sek");
+          message.reply("Belum waktunya untuk anda! Tunggu dulu");
           return;
         }
 
         if (args.length === 0) {
           message.reply(
-            "Lu mau naruh kartu apa: `!place red 7` atau `!place 3` skill issue 💀"
+            "Anda ingin menaruh kartu apa, contohnya: `!place red 7` atau `!place 3` skill issue 💀"
           );
           return;
         }
@@ -1456,7 +1607,9 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         }
 
         if (!cardToPlay) {
-          message.reply("Ga ada kartu itu. Liat o pakai `!hand`.");
+          message.reply(
+            "Tidak ada kartu itu. Liat dengan menggunakan `!hand`."
+          );
           return;
         }
 
@@ -1469,7 +1622,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
               cardToPlay.value === VALUES.WILD_DRAW_FOUR);
           if (!canStack) {
             message.reply(
-              `Ndak boleh, ambil dulu kartu seng ${unoGameSession.cardsToDraw} opo kartu draw liyane.`
+              `Tidak boleh, ambil dulu kartu seng ${unoGameSession.cardsToDraw} atau draw kartu lain.`
             );
             return;
           }
@@ -1480,7 +1633,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
             cardToPlay.value === topCardPlace?.value;
           if (!isValidPlay) {
             message.reply(
-              `Ndak boleh lur. Harus e naruh kartu seng *${unoGameSession.currentColor}*, kartu dengan nilai seng *${topCardPlace?.value}*, opo wild card.`
+              `Tidak boleh. Harus menaruh kartu *${unoGameSession.currentColor}*, atau kartu dengan nilai *${topCardPlace?.value}*, atau wild card.`
             );
             return;
           }
@@ -1497,7 +1650,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
               !validColorsFour.includes(chosenColorFour)
             ) {
               message.reply(
-                "Lu mau main wild card four, skill issue rek, harus e ngene: `!place wild_draw_four blue`"
+                "Anda ingin bermain wild card four, command tidak valid seharusnya: `!place wild_draw_four blue`"
               );
               return;
             }
@@ -1509,7 +1662,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
             const validColors = ["RED", "GREEN", "BLUE", "YELLOW"];
             if (!chosenColor || !validColors.includes(chosenColor)) {
               message.reply(
-                "Lu mau main wild card, skill issue rek, harus e ngene: `!place wild red`"
+                "Anda ingin bermain wild card, command tidak valid seharusnya: `!place wild red`"
               );
               return;
             }
@@ -1639,7 +1792,7 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
         if (playerHandPlace.length === 1) {
           unoGameSession.unoTarget = placePlayerId;
           chat.sendMessage(
-            `*UNO!* @${playerContactPlace.id.user} samean wes duwe 1 kartu terakhir! Jangan lupa ketik !uno`,
+            `*UNO!* @${playerContactPlace.id.user} anda hanya memiliki 1 kartu terakhir! Jangan lupa ketik !uno`,
             { mentions: [playerContactPlace.id._serialized] }
           );
         }
@@ -1861,18 +2014,18 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 *!login* Masuk dan tambahkan perintah bot baru. 🔧
 *!group* - Cek dan daftar grup pada bot. 👥
 *!spin <jumlah kelompok>* - Buat kelompok berdasarkan jumlah yang diberikan. 🔄
-*!remind <waktu: |1m|5h|3d|12m> <pesan> - Buat reminder dalam jangka menit, jam, hari, bulan. 🔄
+*!remindme <waktu: |1m|5h|3d|12m> <pesan> - Buat reminder dalam jangka menit, jam, hari, bulan. 🔄
 
 **🚗 Fun Stuff & Random Shit 💥**
 *!ping* - Test respons bot dengan balasan "pong" 🏓 klasik.
-*!construct <jumlah kata> - Buat kata random. 🔄
-*!shouldi* - Dapatkan respon random iya atau tidak. ✅❌
-*!test <pesan>* - Cek apa yang anda katakan. 🗣️
 *!toyota* - Terima gambar keren dari mobil Toyota. 🚗
 *!cat* - Terima gambar random kucing dari API. 🐱
 *!bro* - Reaksi dengan 💀.
 *!pin* - Pin pesan selama 10 detik. 📌
 *!star* - Tandai pesan dengan bintang. ⭐
+*!test <pesan>* - Cek apa yang anda katakan. 🗣️
+*!construct <jumlah kata> - Buat kata random. 🔄
+*!shouldi* - Dapatkan respon random iya atau tidak. ✅❌
 *!ba* - 🍎🍎🍎
 *!bt* - 🚗🚗🚗
 
@@ -1885,10 +2038,11 @@ Ada Password?: ${hasPassword ? `Iya` : `Tidak`}
 -!aicepat <pesan>- - Ajukan pertanyaan cepat ke AI dan terima balasan. DEPRECATED ⚡
 -!aicoding <pesan>- - Ajukan pertanyaan pemrograman ke AI dan terima balasan. DEPRECATED  💻
 
-**🎮 Game 🕹️**
-*!help uno* - Lihat detail pemainan UNO (iya main UNO di WhatsApp) 🎴.
-
-Botnya Zahran v1.5`
+**🎮 Games 🃏**
+*!help uno* - Lihat detail pemainan UNO 🎴.
+*!help blackjack* - Lihat detail pemainan Blackjack ♠️.
+*!help marblerun* - Lihat detail permainan Marble Run 🔵.
+Botnya Zahran v2.0`
           );
           return;
         }
@@ -1963,6 +2117,24 @@ Botnya Zahran v2.0`
 *Bust*: Nilai kartumu luwih teko 21. Langsung kalah neng ronde iku.
 *Push*: Nilai kartumu podo karo dealer. Taruhanmu mbalik.
 *Aturan Dealer*: Dealer kudu \`!hit\` terus sampek nilai kartune 17 utowo luwih.
+
+**Selamat Bermain & Semoga Beruntung!**`
+          );
+          return;
+        }
+        if (response == "marblerun") {
+          message.reply(
+            `🌟 **Cara Bermain Marble Run di WhatsApp** 🌟
+
+*🔵 SETUP PERMAINAN 🔴*
+*!marblerun*: Membuat lobi Marble Run baru.
+
+*🔵 AKSI DALAM GAME 🔴*
+*!play*: Join permainan Marble Run.
+
+*📜 **TUJUAN & ATURAN DASAR** 🔴*
+*Tujuan*: Marble Run adalah permainan mirip di aplikasi streaming Twitch "Marbles on Stream" pada WhatsApp. 
+Di permainan ini, pemain dapat gabung dan berpartisipasi pada "balapan kelereng" random secara virtual.
 
 **Selamat Bermain & Semoga Beruntung!**`
           );
@@ -2201,21 +2373,10 @@ Botnya Zahran v2.0`
         );
         const data: FindResponsesTypeResponse = res.data;
         if (data.success && data.responses) {
+          console.log(data.responses);
           if (data.responses.reply) {
-            const orString = data.responses.reply;
-            const currentMsg = await message.reply("​");
-            const typingPromises = orString.split("").map((char, index) => {
-              return new Promise<void>((resolve) =>
-                setTimeout(async () => {
-                  const content = orString.substring(0, index + 1);
-                  await currentMsg.edit(content);
-                  resolve();
-                }, index * 120)
-              );
-            });
-            await Promise.all(typingPromises);
-            await currentMsg.edit(orString);
-            break;
+            message.reply(data.responses.reply);
+            
           }
           if (data.responses.images) {
             console.log(data.responses.images);

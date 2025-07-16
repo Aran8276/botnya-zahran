@@ -424,10 +424,18 @@ export interface BlackjackGameSession {
   isGameStarted: boolean;
   players: Record<string, PlayerState>;
   playerOrder: string[];
-  host: string;
+  host: string | null;
   currentPlayerIndex: number;
   dealerHand: BlackjackCard[];
   deck: BlackjackCard[];
   gamePhase: "betting" | "player_turn" | "dealer_turn" | "payout" | "ended";
   startingChips: number;
+  inactivityTimer: NodeJS.Timeout | null;
+  leaderboard: string[];
+}
+
+export interface MarbleRunGameSession {
+  isOpen: boolean;
+  players: string[];
+  timer: NodeJS.Timeout | null;
 }
