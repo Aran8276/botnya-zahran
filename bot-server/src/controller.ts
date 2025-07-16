@@ -12,6 +12,7 @@ import {
   UnoGameSession,
 } from "./type";
 import { COLORS, RANKS, SUITS, VALUES } from "./const";
+require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");

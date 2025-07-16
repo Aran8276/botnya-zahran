@@ -36,6 +36,7 @@ import { client } from "../main";
 import { GoogleGenAI } from "@google/genai";
 import { videoData } from "./badApple.data";
 import { COLORS, laravelUrl, nextJsUrl, requestHeader, VALUES } from "./const";
+require("dotenv").config();
 
 export const activeReminders = {};
 
