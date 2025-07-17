@@ -1,12 +1,21 @@
+# laravel 9080
+# bot-server 9090
+# frontend-web 9100
+# landing-page 9200
+
 services:
   bot-server:
     build: ./bot-server
     ports:
-      - "5000:4000"
+      - "9090:4000"
   frontend-web:
     build: ./frontend-web
     ports:
-      - "83:3000"
+      - "9100:3000"
+  landing-page:
+    build: ./landing-page
+    ports:
+      - "9200:3000"
   fpm:
     build: ./backend-api
     volumes:
@@ -16,7 +25,7 @@ services:
   nginx:
     image: nginx:stable-alpine
     ports:
-      - 84:80
+      - 9080:80
     volumes:
       - ./backend-api/src:/var/www
       - ./backend-api/nginx:/etc/nginx/conf.d
