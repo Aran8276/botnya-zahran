@@ -60,7 +60,7 @@ export const client = new Client({
   webVersionCache: {
     // fixes serialization issue undefined
     remotePath:
-      "https://raw.githubusercontent.com/wppconnect-team/wa-version/refs/heads/main/html/2.3000.1024212402-alpha.html",
+      "https://raw.githubusercontent.com/wppconnect-team/wa-version/refs/heads/main/html/2.3000.1027100105-alpha.html",
     type: "remote",
   },
   puppeteer: {
