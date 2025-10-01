@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+  AWAIT_REGISTER
+}
+
+enum OutputType {
+  TEXT
+  IMAGE
+  INBUILT_COMMAND
+  JAVASCRIPT
+}
+
+enum ScheduleType {
+  REPEAT
+  ONCE
+}
+
+model SystemStats {
+  id                   Int      @id @unique @default(1)
+  botOwnerSerializedId String
+  totalCommandOutputs  Int      @default(0)
+  totalUnoGames        Int      @default(0)
+  totalBlackjackGames  Int      @default(0)
+  totalMarbleRunGames  Int      @default(0)
+  firstRegistered      DateTime @default(now())
+}
+
+model User {
+  id                String           @id @default(cuid())
+  serializedId      String           @unique
+  name              String?
+  username          String?          @unique
+  password          String?
+  role              Role             @default(AWAIT_REGISTER)
+  commandUsageCount Int              @default(0)
+  xp                Int              @default(0)
+  ownedCommands     Commands[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  GroupOptions      GroupOptions[]
+  GroupScheduler    GroupScheduler[]
+  GuestSession      GuestSession[]
+}
+
+model Commands {
+  id                   String        @id @default(cuid())
+  input                String        @unique
+  commandUsageCount    Int           @default(0)
+  outputType           OutputType    @default(TEXT)
+  outputText           String?
+  outputImageUrl       String?
+  outputInbuiltCommand String?
+  outputJavascript     String?
+  owner                User?         @relation(fields: [ownerId], references: [id])
+  ownerId              String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  deletedAt            DateTime?
+  deletedAtExpiration  DateTime?
+  schedule             Schedule?     @relation(fields: [scheduleId], references: [id])
+  scheduleId           String?
+  GroupOptions         GroupOptions? @relation(fields: [groupOptionsId], references: [id])
+  groupOptionsId       String?
+}
+
+model GuestSession {
+  id          String   @id @default(cuid())
+  requestedBy User?    @relation(fields: [userId], references: [id])
+  entryToken  String
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  userId      String?
+}
+
+model Group {
+  id                 String              @id @default(cuid())
+  serializedId       String              @unique
+  isIgnored          Boolean             @default(false)
+  groupParticipants  GroupParticipants[]
+  adminSerializedIds String[]
+  groupScheduler     GroupScheduler      @relation(fields: [groupSchedulerId], references: [id])
+  groupOption        GroupOptions        @relation(fields: [groupOptionId], references: [id])
+  groupSchedulerId   String              @unique
+  groupOptionId      String              @unique
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model GroupParticipants {
+  id                String   @id @default(cuid())
+  pushName          String
+  profilePictureUrl String?
+  serializedId      String   @unique
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  group             Group    @relation(fields: [groupId], references: [id])
+  groupId           String
+}
+
+model Schedule {
+  id               String          @id @default(cuid())
+  triggerAt        DateTime        @default(now())
+  output           Commands[]
+  groupScheduler   GroupScheduler? @relation(fields: [groupSchedulerId], references: [id])
+  groupSchedulerId String?
+  scheduleType     ScheduleType    @default(REPEAT)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model GroupScheduler {
+  id              String     @id @default(cuid())
+  isEnabled       Boolean    @default(false)
+  schedules       Schedule[]
+  group           Group?
+  createdAt       DateTime   @default(now())
+  lastUpdatedAtBy User?      @relation(fields: [userId], references: [id])
+  userId          String?
+  updatedAt       DateTime   @updatedAt
+}
+
+model GroupOptions {
+  id                    String     @id @default(cuid())
+  welcomeMessage        String?
+  goodbyeMessage        String?
+  enableWelcomeMessage  Boolean    @default(false)
+  enableGoodbyeMessage  Boolean    @default(false)
+  disableEveryone       Boolean    @default(false)
+  disableUnoGame        Boolean    @default(false)
+  disableBlackjackGame  Boolean    @default(false)
+  disableMarbleRunGame  Boolean    @default(false)
+  disableAi             Boolean    @default(false)
+  lockEveryoneAdmin     Boolean    @default(false)
+  scheduleCommandWeekly Boolean    @default(false)
+  weeklyCommand         Commands[]
+  group                 Group?
+  createdAt             DateTime   @default(now())
+  lastUpdatedAtBy       User?      @relation(fields: [userId], references: [id])
+  updatedAt             DateTime   @updatedAt
+  userId                String?
+}
