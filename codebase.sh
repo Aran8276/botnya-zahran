@@ -9,6 +9,7 @@ find . -type d \( \
     -path "./.pnp" -o \
     -path "./coverage" -o \
     -path "./.next" -o \
+    -path "./src/generated" -o \
     -path "./out" -o \
     -path "./build" -o \
     -path "./.vercel" -o \
