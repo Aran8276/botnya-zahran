@@ -42,12 +42,6 @@ next-env.d.ts
 
 # tree
 tree.txt
-/src/generated/prisma
 
-
-
-/src/generated/prisma
-
-/src/generated/prisma
-
-/src/generated/prisma
+# wwebjs
+.wwebjs_auth
