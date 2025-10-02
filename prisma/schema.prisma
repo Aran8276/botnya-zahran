@@ -135,6 +135,7 @@ model GroupOptions {
   goodbyeMessage        String?
   enableWelcomeMessage  Boolean    @default(false)
   enableGoodbyeMessage  Boolean    @default(false)
+  disableSchedules      Boolean    @default(false)
   disableEveryone       Boolean    @default(false)
   disableUnoGame        Boolean    @default(false)
   disableBlackjackGame  Boolean    @default(false)

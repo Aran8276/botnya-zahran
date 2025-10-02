@@ -73,6 +73,7 @@ export default async function GroupDetailsPage({
           <ScheduleManager
             scheduler={group.groupScheduler}
             groupId={group.id}
+            schedulesDisabled={group.groupOption.disableSchedules}
           />
         </CardContent>
       </Card>

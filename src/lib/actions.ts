@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// src/lib/actions.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import prisma from "./prisma";
@@ -38,7 +38,6 @@ export async function createCommand(values: z.infer<typeof CommandSchema>) {
           "Guest users can only create up to 5 commands. Please register for more.",
       };
     }
-
     if (user.role === Role.USER && user._count.ownedCommands >= 25) {
       return { error: "You have reached the maximum command limit of 25." };
     }
@@ -48,7 +47,9 @@ export async function createCommand(values: z.infer<typeof CommandSchema>) {
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
-    const data = { ...validatedFields.data, ownerId: session.user.id };
+
+    const ownerId = user.role === Role.AWAIT_REGISTER ? null : session.user.id;
+    const data = { ...validatedFields.data, ownerId };
 
     await prisma.commands.create({ data });
     revalidatePath("/commands");
@@ -82,8 +83,8 @@ export async function updateCommand(
 
     const canModify =
       session.user.role === Role.ADMIN ||
-      !command.owner || // Anyone can edit if there is no owner
-      command.owner?.role === Role.AWAIT_REGISTER || // Anyone can edit if owner is a guest
+      !command.owner ||
+      command.owner?.role === Role.AWAIT_REGISTER ||
       session.user.id === command.ownerId;
 
     if (!canModify) {
@@ -91,10 +92,10 @@ export async function updateCommand(
     }
 
     const validatedFields = CommandSchema.safeParse(values);
+
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
-
     await prisma.commands.update({ where: { id }, data: validatedFields.data });
     revalidatePath(`/commands`);
     revalidatePath(`/commands/${id}/edit`);
@@ -112,20 +113,18 @@ export async function softDeleteCommand(id: string) {
   if (!session?.user) {
     throw new Error("Unauthorized");
   }
-
   const command = await prisma.commands.findUnique({
     where: { id },
     include: { owner: true },
   });
-
   if (!command) {
     throw new Error("Command not found.");
   }
 
   const canModify =
     session.user.role === Role.ADMIN ||
-    !command.owner || // Anyone can delete if there is no owner
-    command.owner?.role === Role.AWAIT_REGISTER || // Anyone can delete if owner is a guest
+    !command.owner ||
+    command.owner?.role === Role.AWAIT_REGISTER ||
     session.user.id === command.ownerId;
 
   if (!canModify) {
@@ -165,17 +164,14 @@ export async function executeJavascript(
   const logs: any[] = [];
   const isolate = new ivm.Isolate({ memoryLimit: 128 });
   const context = await isolate.createContext();
-
   const jail = context.global;
   await jail.set("global", jail.derefInto());
-
   await jail.set(
     "_log",
     new ivm.Reference((...args: any[]) => {
       logs.push(args.map((arg) => arg.copy()));
     })
   );
-
   await context.eval(`
     global.console = {
       log: (...args) => {
@@ -206,7 +202,6 @@ export async function executeJavascript(
 export async function createGroup(values: z.infer<typeof GroupSchema>) {
   try {
     const validatedFields = GroupSchema.safeParse(values);
-
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
@@ -243,14 +238,15 @@ export async function updateGroup(
 ) {
   try {
     const validatedFields = GroupSchema.safeParse(values);
-
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
+
     await prisma.group.update({
       where: { id },
       data: validatedFields.data,
     });
+
     revalidatePath(`/groups`);
     revalidatePath(`/groups/${id}`);
     return { success: "Group updated successfully." };
@@ -272,11 +268,9 @@ export async function updateGroupOptions(
   values: z.infer<typeof GroupOptionsSchema>
 ) {
   const validatedFields = GroupOptionsSchema.safeParse(values);
-
   if (!validatedFields.success) {
     throw new Error("Invalid fields!");
   }
-
   console.log((({ groupId, ...rest }) => rest)(validatedFields.data));
   await prisma.groupOptions.update({
     where: { id },
@@ -291,10 +285,10 @@ export async function createParticipant(
   values: z.infer<typeof GroupParticipantSchema>
 ) {
   const validatedFields = GroupParticipantSchema.safeParse(values);
-
   if (!validatedFields.success) {
     throw new Error("Invalid fields!");
   }
+
   await prisma.groupParticipants.create({
     data: {
       ...validatedFields.data,
@@ -326,7 +320,6 @@ export async function createSchedule(
       groupSchedulerId,
     },
   });
-
   revalidatePath(`/groups/${groupId}`);
 }
 
@@ -369,11 +362,9 @@ export async function toggleGroupAdmin(
       where: { id: groupId },
       select: { adminSerializedIds: true },
     });
-
     if (!group) {
       return { error: "Group not found." };
     }
-
     const isAdmin = group.adminSerializedIds.includes(participantSerializedId);
     const newAdminIds = isAdmin
       ? group.adminSerializedIds.filter((id) => id !== participantSerializedId)
@@ -383,7 +374,6 @@ export async function toggleGroupAdmin(
       where: { id: groupId },
       data: { adminSerializedIds: newAdminIds },
     });
-
     revalidatePath(`/groups/${groupId}`);
     return { success: "Admin status updated." };
   } catch (error) {

@@ -12,16 +12,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
-        // Guest login with serializedId
         const guestLogin = GuestLoginSchema.safeParse(credentials);
         if (guestLogin.success) {
           const user = await prisma.user.findUnique({
             where: { serializedId: guestLogin.data.serializedId },
           });
-          if (user) return user;
+          if (user && user.role === Role.AWAIT_REGISTER) return user;
         }
 
-        // Regular user login with username/password
         const validatedFields = UserLoginSchema.safeParse(credentials);
         if (validatedFields.success) {
           const { username, password } = validatedFields.data;
@@ -29,11 +27,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             where: { username },
           });
           if (!user || !user.password) return null;
-
           const passwordsMatch = await bcrypt.compare(password, user.password);
           if (passwordsMatch) return user;
         }
-
         return null;
       },
     }),
@@ -43,7 +39,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const isLoggedIn = !!auth?.user;
       const role = auth?.user?.role;
       const { pathname } = nextUrl;
-
       const isPublicRoute = pathname === "/login" || pathname === "/register";
 
       if (isPublicRoute) {

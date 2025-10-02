@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 "use client";
 
 import { GroupScheduler, Schedule, ScheduleType } from "@prisma/client";
@@ -37,6 +36,7 @@ type SchedulerWithSchedules = GroupScheduler & { schedules: Schedule[] };
 interface ScheduleManagerProps {
   scheduler: SchedulerWithSchedules;
   groupId: string;
+  schedulesDisabled: boolean;
 }
 
 type ScheduleFormInput = z.input<typeof ScheduleSchema>;
@@ -55,6 +55,7 @@ const toDateTimeLocal = (date: Date) => {
 export default function ScheduleManager({
   scheduler,
   groupId,
+  schedulesDisabled,
 }: ScheduleManagerProps) {
   const [isPending, startTransition] = useTransition();
   const {
@@ -112,6 +113,7 @@ export default function ScheduleManager({
             id="triggerAt"
             type="datetime-local"
             {...register("triggerAt")}
+            disabled={schedulesDisabled}
           />
           {errors.triggerAt && (
             <p className="text-sm text-red-500">{errors.triggerAt.message}</p>
@@ -124,6 +126,7 @@ export default function ScheduleManager({
             onValueChange={(value) =>
               setValue("scheduleType", value as ScheduleType)
             }
+            disabled={schedulesDisabled}
           >
             <SelectTrigger id="scheduleType">
               <SelectValue placeholder="Select type" />
@@ -137,7 +140,7 @@ export default function ScheduleManager({
             </SelectContent>
           </Select>
         </div>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending || schedulesDisabled}>
           {isPending ? "Adding..." : "Add Schedule"}
         </Button>
       </form>
@@ -165,6 +168,7 @@ export default function ScheduleManager({
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(s.id)}
+                    disabled={schedulesDisabled}
                   >
                     <IconTrash className="h-4 w-4 text-destructive" />
                   </Button>

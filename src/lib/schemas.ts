@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OutputType, ScheduleType } from "@prisma/client";
+import { OutputType, ScheduleType, Role } from "@prisma/client";
 
 export const UserLoginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -49,6 +49,7 @@ export const GroupOptionsSchema = z.object({
   goodbyeMessage: z.string().optional(),
   enableWelcomeMessage: z.boolean(),
   enableGoodbyeMessage: z.boolean(),
+  disableSchedules: z.boolean(),
   disableEveryone: z.boolean(),
   disableUnoGame: z.boolean(),
   disableBlackjackGame: z.boolean(),
@@ -70,9 +71,5 @@ export const ScheduleSchema = z.object({
 });
 
 export const UserRoleSchema = z.object({
-  role: z.nativeEnum({
-    ADMIN: "ADMIN",
-    USER: "USER",
-    AWAIT_REGISTER: "AWAIT_REGISTER",
-  }),
+  role: z.nativeEnum(Role),
 });

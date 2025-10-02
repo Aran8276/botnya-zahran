@@ -101,6 +101,21 @@ export default function GroupOptionsForm({
         </div>
         <div className="flex items-center gap-2">
           <Controller
+            name="disableSchedules"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="disableSchedules"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
+              />
+            )}
+          />
+          <Label htmlFor="disableSchedules">Disable Schedules</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Controller
             name="disableEveryone"
             control={control}
             render={({ field }) => (
