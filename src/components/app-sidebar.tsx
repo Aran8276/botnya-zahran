@@ -4,7 +4,7 @@ import {
   IconCommand,
   IconGauge,
   IconTrash,
-  IconUsers,
+  // IconUsers,
   IconWorld,
   IconInnerShadowTop,
   IconSettings,
@@ -42,7 +42,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     { title: "Commands", href: "/commands", icon: IconCommand },
     { title: "Deleted Commands", href: "/commands/deleted", icon: IconTrash },
     { title: "Groups", href: "/groups", icon: IconWorld },
-    { title: "Users", href: "/users", icon: IconUsers },
+    // { title: "Users", href: "/users", icon: IconUsers },
     { title: "System Stats", href: "/system-stats", icon: IconSettings },
   ];
 

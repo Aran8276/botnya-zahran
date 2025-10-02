@@ -29,8 +29,6 @@ export default async function GroupDetailsPage({
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Group Details</h1>
-
       <Card>
         <CardHeader>
           <CardTitle>Group Options</CardTitle>

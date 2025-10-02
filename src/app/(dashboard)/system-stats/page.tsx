@@ -1,4 +1,12 @@
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import prisma from "@/lib/prisma";
+import { formatDateBasic } from "@/utils/date-formatter";
 
 export default async function SystemStatsPage() {
   let stats = await prisma.systemStats.findUnique({ where: { id: 1 } });
@@ -13,12 +21,17 @@ export default async function SystemStatsPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8">System Stats</h1>
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <Card>
+      <CardHeader>
+        <CardTitle>System Stats</CardTitle>
+        <CardDescription>
+          An overview of system-wide statistics.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
           <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <dt className="text-sm font-medium text-muted-foreground">
               Bot Owner Serialized ID
             </dt>
             <dd className="mt-1 text-lg font-semibold">
@@ -26,7 +39,7 @@ export default async function SystemStatsPage() {
             </dd>
           </div>
           <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <dt className="text-sm font-medium text-muted-foreground">
               Total Command Outputs
             </dt>
             <dd className="mt-1 text-lg font-semibold">
@@ -34,7 +47,7 @@ export default async function SystemStatsPage() {
             </dd>
           </div>
           <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <dt className="text-sm font-medium text-muted-foreground">
               Total Uno Games
             </dt>
             <dd className="mt-1 text-lg font-semibold">
@@ -42,7 +55,7 @@ export default async function SystemStatsPage() {
             </dd>
           </div>
           <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <dt className="text-sm font-medium text-muted-foreground">
               Total Blackjack Games
             </dt>
             <dd className="mt-1 text-lg font-semibold">
@@ -50,7 +63,7 @@ export default async function SystemStatsPage() {
             </dd>
           </div>
           <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <dt className="text-sm font-medium text-muted-foreground">
               Total Marble Run Games
             </dt>
             <dd className="mt-1 text-lg font-semibold">
@@ -58,15 +71,15 @@ export default async function SystemStatsPage() {
             </dd>
           </div>
           <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <dt className="text-sm font-medium text-muted-foreground">
               First Registered
             </dt>
             <dd className="mt-1 text-lg font-semibold">
-              {stats.firstRegistered.toLocaleString()}
+              {formatDateBasic(stats.firstRegistered)}
             </dd>
           </div>
         </dl>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
