@@ -125,9 +125,12 @@ export function CommandsDataTable({ data }: CommandsDataTableProps) {
                       key={column.id}
                       className="capitalize"
                       checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
+                      onSelect={(e) => {
+                        e.preventDefault();
+                      }}
+                      onCheckedChange={(value) => {
+                        column.toggleVisibility(!!value);
+                      }}
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
@@ -150,7 +153,7 @@ export function CommandsDataTable({ data }: CommandsDataTableProps) {
           </CommandFormDialog>
         </div>
       </div>
-      <div className="relative flex flex-col gap-4 overflow-auto pt-4">
+      <div className="relative flex flex-col gap-4 overflow-auto pt-6">
         <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">

@@ -30,7 +30,7 @@ export default function CommandForm({ command, onSuccess }: CommandFormProps) {
     register,
     handleSubmit,
     watch,
-    control,
+    setValue,
     formState: { errors },
   } = useForm<z.infer<typeof CommandSchema>>({
     resolver: zodResolver(CommandSchema),
@@ -86,7 +86,10 @@ export default function CommandForm({ command, onSuccess }: CommandFormProps) {
         <Select
           defaultValue={outputType}
           onValueChange={(value) =>
-            control._form.setValue("outputType", value as OutputType)
+            setValue(
+              "outputType",
+              value as "TEXT" | "IMAGE" | "INBUILT_COMMAND" | "JAVASCRIPT"
+            )
           }
         >
           <SelectTrigger>

@@ -23,6 +23,7 @@ export default async function DashboardLayout({
       }
     >
       <AppSidebar
+        variant="inset"
         user={
           session?.user as Session["user"] & {
             name?: string;
@@ -33,7 +34,13 @@ export default async function DashboardLayout({
       />
       <SidebarInset>
         <SiteHeader />
-        <main className="flex-1 p-8 bg-background">{children}</main>
+        <main className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-8">
+              {children}
+            </div>
+          </div>
+        </main>
         <Toaster />
       </SidebarInset>
     </SidebarProvider>

@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 };
 
 const inter = Inter({
-  subsets: ["latin"], // Specify the character subsets to load
-  display: "swap", // Optimize font loading behavior
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export default function RootLayout({
