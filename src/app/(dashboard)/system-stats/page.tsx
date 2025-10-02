@@ -32,7 +32,7 @@ export default async function SystemStatsPage() {
         <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
           <div className="sm:col-span-1">
             <dt className="text-sm font-medium text-muted-foreground">
-              Bot Owner Serialized ID
+              Bot Host Serialized ID
             </dt>
             <dd className="mt-1 text-lg font-semibold">
               {stats.botOwnerSerializedId}

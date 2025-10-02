@@ -33,7 +33,6 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/manifest.json",
-  themeColor: "#ffffff",
   other: {
     "msapplication-TileImage": "/ms-icon-144x144.png",
   },
