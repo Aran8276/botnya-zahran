@@ -1,8 +1,34 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/Groups/ScheduleManager.tsx
 "use client";
 
-import { GroupScheduler, Schedule } from "@prisma/client";
-import { deleteSchedule } from "@/lib/actions";
-import ScheduleForm from "./ScheduleForm";
+import { GroupScheduler, Schedule, ScheduleType } from "@prisma/client";
+import { deleteSchedule, createSchedule } from "@/lib/actions";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { ScheduleSchema } from "@/lib/schemas";
+import { useTransition } from "react";
+import { toast } from "sonner";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { IconTrash } from "@tabler/icons-react";
+import { Label } from "../ui/label";
 
 type SchedulerWithSchedules = GroupScheduler & { schedules: Schedule[] };
 
@@ -11,28 +37,144 @@ interface ScheduleManagerProps {
   groupId: string;
 }
 
+type ScheduleFormInput = z.input<typeof ScheduleSchema>;
+type ScheduleFormOutput = z.output<typeof ScheduleSchema>;
+
+const toDateTimeLocal = (date: Date) => {
+  const ten = (i: number) => (i < 10 ? "0" : "") + i;
+  const YYYY = date.getFullYear();
+  const MM = ten(date.getMonth() + 1);
+  const DD = ten(date.getDate());
+  const HH = ten(date.getHours());
+  const mm = ten(date.getMinutes());
+  return `${YYYY}-${MM}-${DD}T${HH}:${mm}`;
+};
+
 export default function ScheduleManager({
   scheduler,
   groupId,
 }: ScheduleManagerProps) {
+  const [isPending, startTransition] = useTransition();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<ScheduleFormInput>({
+    resolver: zodResolver(ScheduleSchema),
+    defaultValues: {
+      triggerAt: toDateTimeLocal(new Date()),
+      scheduleType: ScheduleType.ONCE,
+    },
+  });
+
+  const scheduleType = watch("scheduleType");
+
+  const onSubmit: SubmitHandler<ScheduleFormOutput> = (data) => {
+    startTransition(() => {
+      toast.promise(createSchedule(scheduler.id, groupId, data), {
+        loading: "Adding schedule...",
+        success: () => {
+          reset({
+            triggerAt: toDateTimeLocal(new Date()),
+            scheduleType: ScheduleType.ONCE,
+          });
+          return "Schedule added.";
+        },
+        error: "Failed to add schedule.",
+      });
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    startTransition(() => {
+      toast.promise(deleteSchedule(id, groupId), {
+        loading: "Deleting schedule...",
+        success: "Schedule deleted.",
+        error: "Failed to delete schedule.",
+      });
+    });
+  };
+
   return (
-    <div className="p-6 border rounded-lg">
-      <h2 className="text-2xl font-bold mb-4">Scheduler</h2>
-      <ScheduleForm groupSchedulerId={scheduler.id} groupId={groupId} />
-      <ul className="mt-4 space-y-2">
-        {scheduler.schedules.map((s) => (
-          <li key={s.id} className="flex justify-between items-center py-2">
-            <span>
-              {s.scheduleType} @ {s.triggerAt.toLocaleString()}
-            </span>
-            <form action={() => deleteSchedule(s.id, groupId)}>
-              <button type="submit" className="text-red-500">
-                Delete
-              </button>
-            </form>
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-4">
+      <form
+        onSubmit={handleSubmit(onSubmit as any)}
+        className="flex items-end gap-4"
+      >
+        <div className="grid flex-1 gap-2">
+          <Label htmlFor="triggerAt">Trigger At</Label>
+          <Input
+            id="triggerAt"
+            type="datetime-local"
+            {...register("triggerAt")}
+          />
+          {errors.triggerAt && (
+            <p className="text-sm text-red-500">{errors.triggerAt.message}</p>
+          )}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="scheduleType">Type</Label>
+          <Select
+            defaultValue={scheduleType}
+            onValueChange={(value) =>
+              setValue("scheduleType", value as ScheduleType)
+            }
+          >
+            <SelectTrigger id="scheduleType">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(ScheduleType).map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Adding..." : "Add Schedule"}
+        </Button>
+      </form>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Trigger At</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {scheduler.schedules.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell>{s.triggerAt.toLocaleString()}</TableCell>
+                <TableCell>{s.scheduleType}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(s.id)}
+                  >
+                    <IconTrash className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {scheduler.schedules.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center">
+                  No schedules.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

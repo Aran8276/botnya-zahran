@@ -9,15 +9,22 @@ import { GroupSchema } from "@/lib/schemas";
 import { createGroup, updateGroup } from "@/lib/actions";
 import { Group } from "@prisma/client";
 import { useTransition } from "react";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Checkbox } from "../ui/checkbox";
+import { Button } from "../ui/button";
+import { toast } from "sonner";
+import { Textarea } from "../ui/textarea";
 
 interface GroupFormProps {
   group?: Group;
+  onSuccess?: () => void;
 }
 
 type GroupFormInput = z.input<typeof GroupSchema>;
 type GroupFormOutput = z.output<typeof GroupSchema>;
 
-export default function GroupForm({ group }: GroupFormProps) {
+export default function GroupForm({ group, onSuccess }: GroupFormProps) {
   const [isPending, startTransition] = useTransition();
   const {
     register,
@@ -38,11 +45,14 @@ export default function GroupForm({ group }: GroupFormProps) {
   });
 
   const onSubmit: SubmitHandler<GroupFormOutput> = (data) => {
-    startTransition(() => {
-      if (group) {
-        updateGroup(group.id, data);
+    startTransition(async () => {
+      const action = group ? updateGroup(group.id, data) : createGroup(data);
+      const result = await action;
+      if (result.error) {
+        toast.error(result.error);
       } else {
-        createGroup(data);
+        toast.success(result.success);
+        onSuccess?.();
       }
     });
   };
@@ -50,50 +60,36 @@ export default function GroupForm({ group }: GroupFormProps) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit as any)}
-      className="space-y-6 max-w-lg"
+      className="flex flex-col max-h-[400px] overflow-auto space-y-4"
     >
-      <div>
-        <label htmlFor="serializedId">Serialized ID</label>
-        <input
-          id="serializedId"
-          {...register("serializedId")}
-          className="w-full"
-        />
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="serializedId">Serialized ID</Label>
+        <Input id="serializedId" {...register("serializedId")} />
         {errors.serializedId && (
           <p className="text-red-500">{errors.serializedId.message}</p>
         )}
       </div>
 
-      <div className="flex items-center">
-        <input
-          id="isIgnored"
-          type="checkbox"
-          {...register("isIgnored")}
-          className="h-4 w-4 rounded"
-        />
-        <label htmlFor="isIgnored" className="ml-2">
+      <div className="flex items-center space-x-2">
+        <Checkbox id="isIgnored" {...register("isIgnored")} />
+        <label
+          htmlFor="isIgnored"
+          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        >
           Is Ignored
         </label>
       </div>
 
-      <div>
-        <label htmlFor="adminSerializedIds">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="adminSerializedIds">
           Admin Serialized IDs (comma separated)
-        </label>
-        <input
-          id="adminSerializedIds"
-          {...register("adminSerializedIds")}
-          className="w-full"
-        />
+        </Label>
+        <Textarea id="adminSerializedIds" {...register("adminSerializedIds")} />
       </div>
 
-      <button
-        type="submit"
-        disabled={isPending}
-        className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50"
-      >
+      <Button type="submit" disabled={isPending} className="w-full">
         {isPending ? "Saving..." : "Save Group"}
-      </button>
+      </Button>
     </form>
   );
 }

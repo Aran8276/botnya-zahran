@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// src/components/Groups/ParticipantsManager.tsx
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -8,6 +8,18 @@ import { GroupParticipantSchema } from "@/lib/schemas";
 import { createParticipant, deleteParticipant } from "@/lib/actions";
 import { GroupParticipants } from "@prisma/client";
 import { useTransition } from "react";
+import { toast } from "sonner";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { IconTrash } from "@tabler/icons-react";
 
 interface ParticipantsManagerProps {
   participants: GroupParticipants[];
@@ -30,38 +42,86 @@ export default function ParticipantsManager({
 
   const onSubmit = (data: z.infer<typeof GroupParticipantSchema>) => {
     startTransition(() => {
-      createParticipant(groupId, data).then(() => reset());
+      toast.promise(createParticipant(groupId, data), {
+        loading: "Adding participant...",
+        success: () => {
+          reset();
+          return "Participant added.";
+        },
+        error: "Failed to add participant.",
+      });
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    startTransition(() => {
+      toast.promise(deleteParticipant(id, groupId), {
+        loading: "Removing participant...",
+        success: "Participant removed.",
+        error: "Failed to remove participant.",
+      });
     });
   };
 
   return (
-    <div className="p-6 border rounded-lg">
-      <h2 className="text-2xl font-bold mb-4">Participants</h2>
-      <form onSubmit={handleSubmit(onSubmit)} className="flex gap-4 mb-4">
-        <input {...register("serializedId")} placeholder="Serialized ID" />
-        <input {...register("pushName")} placeholder="Push Name" />
-        <button
-          type="submit"
-          disabled={isPending}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50"
-        >
+    <div className="space-y-4">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex items-start gap-4"
+      >
+        <div className="grid flex-1 gap-2">
+          <Input {...register("serializedId")} placeholder="Serialized ID" />
+          {errors.serializedId && (
+            <p className="text-sm text-red-500">
+              {errors.serializedId.message}
+            </p>
+          )}
+        </div>
+        <div className="grid flex-1 gap-2">
+          <Input {...register("pushName")} placeholder="Push Name" />
+          {errors.pushName && (
+            <p className="text-sm text-red-500">{errors.pushName.message}</p>
+          )}
+        </div>
+        <Button type="submit" disabled={isPending}>
           {isPending ? "Adding..." : "Add"}
-        </button>
+        </Button>
       </form>
-      <ul>
-        {participants.map((p) => (
-          <li key={p.id} className="flex justify-between items-center py-2">
-            <span>
-              {p.pushName} ({p.serializedId})
-            </span>
-            <form action={() => deleteParticipant(p.id, groupId)}>
-              <button type="submit" className="text-red-500">
-                Remove
-              </button>
-            </form>
-          </li>
-        ))}
-      </ul>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Push Name</TableHead>
+              <TableHead>Serialized ID</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {participants.map((p) => (
+              <TableRow key={p.id}>
+                <TableCell>{p.pushName}</TableCell>
+                <TableCell>{p.serializedId}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(p.id)}
+                  >
+                    <IconTrash className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {participants.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="h-24 text-center">
+                  No participants.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

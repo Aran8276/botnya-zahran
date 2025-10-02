@@ -8,6 +8,7 @@ import {
   IconUsers,
   IconWorld,
   IconInnerShadowTop,
+  IconSettings,
 } from "@tabler/icons-react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -23,6 +24,7 @@ import {
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Session } from "next-auth";
+import { ThemeSwitcher } from "./theme-switcher";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   user:
@@ -36,13 +38,13 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname();
-
   const navMain = [
     { title: "Dashboard", href: "/", icon: IconGauge },
     { title: "Commands", href: "/commands", icon: IconCommand },
     { title: "Deleted Commands", href: "/commands/deleted", icon: IconTrash },
     { title: "Groups", href: "/groups", icon: IconWorld },
     { title: "Users", href: "/users", icon: IconUsers },
+    { title: "System Stats", href: "/system-stats", icon: IconSettings },
   ];
 
   return (
@@ -65,14 +67,17 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       <SidebarContent>
         <NavMain items={navMain} pathname={pathname} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser
-          user={{
-            name: user?.name ?? "Guest",
-            email: user?.email ?? "",
-            // avatar: user?.image ?? "",
-          }}
-        />
+      <SidebarFooter className="flex-row items-center gap-2">
+        <ThemeSwitcher />
+        <div className="flex-1">
+          <NavUser
+            user={{
+              name: user?.name ?? "Guest",
+              email: user?.email ?? "",
+              image: user?.image,
+            }}
+          />
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

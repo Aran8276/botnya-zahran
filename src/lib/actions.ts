@@ -1,3 +1,4 @@
+// src/lib/actions.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 import { revalidatePath } from "next/cache";
@@ -15,9 +16,11 @@ import * as ivm from "isolated-vm";
 export async function createCommand(values: z.infer<typeof CommandSchema>) {
   try {
     const validatedFields = CommandSchema.safeParse(values);
+
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
+
     await prisma.commands.create({ data: validatedFields.data });
     revalidatePath("/commands");
     return { success: "Command created successfully." };
@@ -38,6 +41,7 @@ export async function updateCommand(
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
+
     await prisma.commands.update({ where: { id }, data: validatedFields.data });
     revalidatePath(`/commands`);
     return { success: "Command updated successfully." };
@@ -83,6 +87,7 @@ export async function executeJavascript(
   const logs: any[] = [];
   const isolate = new ivm.Isolate({ memoryLimit: 128 });
   const context = await isolate.createContext();
+
   const jail = context.global;
   await jail.set("global", jail.derefInto());
 
@@ -123,6 +128,7 @@ export async function executeJavascript(
 export async function createGroup(values: z.infer<typeof GroupSchema>) {
   try {
     const validatedFields = GroupSchema.safeParse(values);
+
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
@@ -159,11 +165,16 @@ export async function updateGroup(
 ) {
   try {
     const validatedFields = GroupSchema.safeParse(values);
+
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
-    await prisma.group.update({ where: { id }, data: validatedFields.data });
+    await prisma.group.update({
+      where: { id },
+      data: validatedFields.data,
+    });
     revalidatePath(`/groups`);
+    revalidatePath(`/groups/${id}`);
     return { success: "Group updated successfully." };
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -183,13 +194,15 @@ export async function updateGroupOptions(
   values: z.infer<typeof GroupOptionsSchema>
 ) {
   const validatedFields = GroupOptionsSchema.safeParse(values);
+
   if (!validatedFields.success) {
-    return { error: "Invalid fields!" };
+    throw new Error("Invalid fields!");
   }
   await prisma.groupOptions.update({
     where: { id },
     data: validatedFields.data,
   });
+
   revalidatePath(`/groups/${values.groupId}`);
 }
 
@@ -198,8 +211,9 @@ export async function createParticipant(
   values: z.infer<typeof GroupParticipantSchema>
 ) {
   const validatedFields = GroupParticipantSchema.safeParse(values);
+
   if (!validatedFields.success) {
-    return { error: "Invalid fields!" };
+    throw new Error("Invalid fields!");
   }
   await prisma.groupParticipants.create({
     data: {
@@ -207,6 +221,7 @@ export async function createParticipant(
       groupId,
     },
   });
+
   revalidatePath(`/groups/${groupId}`);
 }
 
@@ -222,14 +237,16 @@ export async function createSchedule(
 ) {
   const validatedFields = ScheduleSchema.safeParse(values);
   if (!validatedFields.success) {
-    return { error: "Invalid fields!" };
+    throw new Error("Invalid fields!");
   }
+
   await prisma.schedule.create({
     data: {
       ...validatedFields.data,
       groupSchedulerId,
     },
   });
+
   revalidatePath(`/groups/${groupId}`);
 }
 
