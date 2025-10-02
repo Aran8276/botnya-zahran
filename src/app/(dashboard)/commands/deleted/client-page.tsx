@@ -1,4 +1,3 @@
-// src/app/(dashboard)/commands/deleted/client-page.tsx
 "use client";
 
 import * as React from "react";
@@ -206,11 +205,7 @@ export function DeletedCommandsDataTable({
                   table.setPageSize(Number(value));
                 }}
               >
-                <SelectTrigger
-                  size="sm"
-                  className="w-20"
-                  id="rows-per-page"
-                >
+                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
                   <SelectValue
                     placeholder={table.getState().pagination.pageSize}
                   />

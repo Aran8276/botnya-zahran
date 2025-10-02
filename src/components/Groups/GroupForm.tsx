@@ -1,4 +1,3 @@
-// src/components/Groups/GroupForm.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

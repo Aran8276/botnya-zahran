@@ -1,4 +1,3 @@
-// src/app/(dashboard)/groups/page.tsx
 import prisma from "@/lib/prisma";
 import { GroupsDataTable } from "./client-page";
 

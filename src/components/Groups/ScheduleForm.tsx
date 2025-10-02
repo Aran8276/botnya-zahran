@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/components/Groups/ScheduleForm.tsx
+
 "use client";
 
 import { useForm, SubmitHandler } from "react-hook-form";

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/components/Groups/ScheduleManager.tsx
+
 "use client";
 
 import { GroupScheduler, Schedule, ScheduleType } from "@prisma/client";

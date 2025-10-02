@@ -1,4 +1,3 @@
-// src/app/(dashboard)/commands/deleted/page.tsx
 import prisma from "@/lib/prisma";
 import { DeletedCommandsDataTable } from "./client-page";
 

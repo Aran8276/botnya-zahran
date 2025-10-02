@@ -1,4 +1,3 @@
-// src/components/chart-area-interactive.tsx
 "use client";
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";

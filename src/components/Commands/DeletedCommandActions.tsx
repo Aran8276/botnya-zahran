@@ -1,4 +1,3 @@
-// src/components/Commands/DeletedCommandActions.tsx
 "use client";
 
 import { Commands } from "@prisma/client";

@@ -1,4 +1,3 @@
-// src/app/(dashboard)/commands/page.tsx
 import prisma from "@/lib/prisma";
 import { CommandsDataTable } from "./client-page";
 
