@@ -1,15 +1,24 @@
 import { z } from "zod";
 import { OutputType, ScheduleType } from "@prisma/client";
 
-export const LoginSchema = z.object({
+export const UserLoginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
-export const RegisterSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+export const GuestLoginSchema = z.object({
+  serializedId: z.string().min(1, "Guest Identifier is required"),
+});
+
+export const UserRegisterSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   name: z.string().optional(),
+  serializedId: z.string().min(1, "Guest Identifier is required"),
+});
+
+export const GuestRegisterSchema = z.object({
+  serializedId: z.string().min(1, "Guest Identifier is required"),
 });
 
 export const CommandSchema = z.object({
@@ -58,4 +67,12 @@ export const GroupParticipantSchema = z.object({
 export const ScheduleSchema = z.object({
   triggerAt: z.coerce.date(),
   scheduleType: z.nativeEnum(ScheduleType),
+});
+
+export const UserRoleSchema = z.object({
+  role: z.nativeEnum({
+    ADMIN: "ADMIN",
+    USER: "USER",
+    AWAIT_REGISTER: "AWAIT_REGISTER",
+  }),
 });

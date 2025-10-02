@@ -8,11 +8,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import CommandForm from "./CommandForm";
-import { Commands } from "@prisma/client";
+import { CommandWithOwner } from "@/app/(dashboard)/commands/page";
 
 interface CommandFormDialogProps {
   children?: React.ReactNode;
-  command?: Commands;
+  command?: CommandWithOwner;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

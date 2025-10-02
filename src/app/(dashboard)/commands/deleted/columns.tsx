@@ -1,14 +1,24 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Commands } from "@prisma/client";
 import DeletedCommandActions from "@/components/Commands/DeletedCommandActions";
 import { formatDate } from "@/utils/date-formatter";
+import { CommandWithOwner } from "./page";
+import { Role } from "@prisma/client";
 
-export const getColumns = (): ColumnDef<Commands>[] => [
+export const getColumns = (): ColumnDef<CommandWithOwner>[] => [
   {
     accessorKey: "input",
     header: "Input",
+  },
+  {
+    accessorKey: "owner",
+    header: "Owner",
+    cell: ({ row }) => {
+      const owner = row.original.owner;
+      if (!owner) return "-";
+      return owner.role === Role.AWAIT_REGISTER ? "-" : owner.username || "-";
+    },
   },
   {
     accessorKey: "deletedAt",

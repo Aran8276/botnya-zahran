@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Commands } from "@prisma/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,11 +24,28 @@ import {
 import { softDeleteCommand } from "@/lib/actions";
 import { toast } from "sonner";
 import CommandFormDialog from "./CommandFormDialog";
+import { useSession } from "next-auth/react";
+import { Role } from "@prisma/client";
+import { CommandWithOwner } from "@/app/(dashboard)/commands/page";
 
-export default function CommandActions({ command }: { command: Commands }) {
+export default function CommandActions({
+  command,
+}: {
+  command: CommandWithOwner;
+}) {
+  const { data: session } = useSession();
   const [isEditOpen, setEditOpen] = useState(false);
 
+  const canModify =
+    session?.user?.role === Role.ADMIN ||
+    command.owner?.role === Role.AWAIT_REGISTER ||
+    session?.user?.id === command.ownerId;
+
   const handleDelete = async () => {
+    if (!canModify) {
+      toast.error("You don't have permission to delete this command.");
+      return;
+    }
     toast.promise(softDeleteCommand(command.id), {
       loading: "Deleting command...",
       success: "Command moved to trash.",
@@ -57,12 +73,17 @@ export default function CommandActions({ command }: { command: Commands }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+            <DropdownMenuItem
+              onSelect={() => setEditOpen(true)}
+              disabled={!canModify}
+            >
               Edit
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <AlertDialogTrigger asChild>
-              <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" disabled={!canModify}>
+                Delete
+              </DropdownMenuItem>
             </AlertDialogTrigger>
           </DropdownMenuContent>
         </DropdownMenu>

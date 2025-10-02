@@ -4,7 +4,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { GroupParticipantSchema } from "@/lib/schemas";
-import { createParticipant, deleteParticipant } from "@/lib/actions";
+import {
+  createParticipant,
+  deleteParticipant,
+  toggleGroupAdmin,
+} from "@/lib/actions";
 import { GroupParticipants } from "@prisma/client";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -18,16 +22,22 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { IconTrash } from "@tabler/icons-react";
+import { IconShield, IconTrash } from "@tabler/icons-react";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
 
 interface ParticipantsManagerProps {
   participants: GroupParticipants[];
   groupId: string;
+  adminSerializedIds: string[];
+  isGroupAdmin: boolean;
 }
 
 export default function ParticipantsManager({
   participants,
   groupId,
+  adminSerializedIds,
+  isGroupAdmin,
 }: ParticipantsManagerProps) {
   const [isPending, startTransition] = useTransition();
   const {
@@ -62,6 +72,16 @@ export default function ParticipantsManager({
     });
   };
 
+  const handleToggleAdmin = (participantSerializedId: string) => {
+    startTransition(() => {
+      toast.promise(toggleGroupAdmin(groupId, participantSerializedId), {
+        loading: "Updating admin status...",
+        success: "Admin status updated.",
+        error: "Failed to update admin status.",
+      });
+    });
+  };
+
   return (
     <div className="space-y-4">
       <form
@@ -69,7 +89,11 @@ export default function ParticipantsManager({
         className="flex items-start gap-4"
       >
         <div className="grid flex-1 gap-2">
-          <Input {...register("serializedId")} placeholder="Serialized ID" />
+          <Input
+            {...register("serializedId")}
+            placeholder="Serialized ID"
+            disabled={!isGroupAdmin}
+          />
           {errors.serializedId && (
             <p className="text-sm text-red-500">
               {errors.serializedId.message}
@@ -77,12 +101,16 @@ export default function ParticipantsManager({
           )}
         </div>
         <div className="grid flex-1 gap-2">
-          <Input {...register("pushName")} placeholder="Push Name" />
+          <Input
+            {...register("pushName")}
+            placeholder="Push Name"
+            disabled={!isGroupAdmin}
+          />
           {errors.pushName && (
             <p className="text-sm text-red-500">{errors.pushName.message}</p>
           )}
         </div>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending || !isGroupAdmin}>
           {isPending ? "Adding..." : "Add"}
         </Button>
       </form>
@@ -92,6 +120,7 @@ export default function ParticipantsManager({
             <TableRow>
               <TableHead>Serialized ID</TableHead>
               <TableHead>Push Name</TableHead>
+              <TableHead>Admin</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -100,11 +129,25 @@ export default function ParticipantsManager({
               <TableRow key={p.id}>
                 <TableCell>{p.serializedId}</TableCell>
                 <TableCell>{p.pushName}</TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`admin-toggle-${p.id}`}
+                      checked={adminSerializedIds.includes(p.serializedId)}
+                      onCheckedChange={() => handleToggleAdmin(p.serializedId)}
+                      disabled={!isGroupAdmin}
+                    />
+                    <Label htmlFor={`admin-toggle-${p.id}`}>
+                      <IconShield className="h-4 w-4" />
+                    </Label>
+                  </div>
+                </TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(p.id)}
+                    disabled={!isGroupAdmin}
                   >
                     <IconTrash className="h-4 w-4 text-destructive" />
                   </Button>
@@ -113,7 +156,7 @@ export default function ParticipantsManager({
             ))}
             {participants.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} className="h-24 text-center">
+                <TableCell colSpan={4} className="h-24 text-center">
                   No participants.
                 </TableCell>
               </TableRow>

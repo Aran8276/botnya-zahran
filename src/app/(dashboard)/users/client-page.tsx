@@ -14,6 +14,7 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
+import { User } from "@prisma/client";
 import {
   Table,
   TableBody,
@@ -46,15 +47,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getColumns } from "./columns";
-import { CommandWithOwner } from "./page";
 
-interface DeletedCommandsDataTableProps {
-  data: CommandWithOwner[];
+interface UsersDataTableProps {
+  data: User[];
 }
 
-export function DeletedCommandsDataTable({
-  data,
-}: DeletedCommandsDataTableProps) {
+export function UsersDataTable({ data }: UsersDataTableProps) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -67,11 +65,7 @@ export function DeletedCommandsDataTable({
     pageSize: 10,
   });
 
-  const columns: ColumnDef<CommandWithOwner>[] = React.useMemo(
-    () => getColumns(),
-    []
-  );
-
+  const columns: ColumnDef<User>[] = React.useMemo(() => getColumns(), []);
   const table = useReactTable({
     data,
     columns,

@@ -14,8 +14,6 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { Commands } from "@prisma/client";
-
 import {
   Table,
   TableBody,
@@ -50,9 +48,10 @@ import {
 } from "@/components/ui/select";
 import { getColumns } from "./columns";
 import CommandFormDialog from "@/components/Commands/CommandFormDialog";
+import { CommandWithOwner } from "./page";
 
 interface CommandsDataTableProps {
-  data: Commands[];
+  data: CommandWithOwner[];
 }
 
 export function CommandsDataTable({ data }: CommandsDataTableProps) {
@@ -69,7 +68,10 @@ export function CommandsDataTable({ data }: CommandsDataTableProps) {
   });
   const [isCreateDialogOpen, setCreateDialogOpen] = React.useState(false);
 
-  const columns: ColumnDef<Commands>[] = React.useMemo(() => getColumns(), []);
+  const columns: ColumnDef<CommandWithOwner>[] = React.useMemo(
+    () => getColumns(),
+    []
+  );
 
   const table = useReactTable({
     data,

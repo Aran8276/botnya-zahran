@@ -1,14 +1,16 @@
 import CommandForm from "@/components/Commands/CommandForm";
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { CommandWithOwner } from "../../page";
 
 export default async function EditCommandPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const command = await prisma.commands.findUnique({
+  const command: CommandWithOwner | null = await prisma.commands.findUnique({
     where: { id: params.id },
+    include: { owner: true },
   });
 
   if (!command) {

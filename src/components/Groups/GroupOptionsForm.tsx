@@ -16,13 +16,16 @@ import { Button } from "../ui/button";
 interface GroupOptionsFormProps {
   groupOptions: GroupOptions;
   groupId: string;
+  isGroupAdmin: boolean;
 }
 
 export default function GroupOptionsForm({
   groupOptions,
   groupId,
+  isGroupAdmin,
 }: GroupOptionsFormProps) {
   const [isPending, startTransition] = useTransition();
+
   const { register, handleSubmit, control } = useForm<
     z.infer<typeof GroupOptionsSchema>
   >({
@@ -50,11 +53,19 @@ export default function GroupOptionsForm({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="welcomeMessage">Welcome Message</Label>
-          <Input id="welcomeMessage" {...register("welcomeMessage")} />
+          <Input
+            id="welcomeMessage"
+            {...register("welcomeMessage")}
+            disabled={!isGroupAdmin}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="goodbyeMessage">Goodbye Message</Label>
-          <Input id="goodbyeMessage" {...register("goodbyeMessage")} />
+          <Input
+            id="goodbyeMessage"
+            {...register("goodbyeMessage")}
+            disabled={!isGroupAdmin}
+          />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -67,6 +78,7 @@ export default function GroupOptionsForm({
                 id="enableWelcomeMessage"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
@@ -81,6 +93,7 @@ export default function GroupOptionsForm({
                 id="enableGoodbyeMessage"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
@@ -95,6 +108,7 @@ export default function GroupOptionsForm({
                 id="disableEveryone"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
@@ -109,6 +123,7 @@ export default function GroupOptionsForm({
                 id="disableUnoGame"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
@@ -123,6 +138,7 @@ export default function GroupOptionsForm({
                 id="disableBlackjackGame"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
@@ -137,6 +153,7 @@ export default function GroupOptionsForm({
                 id="disableMarbleRunGame"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
@@ -151,6 +168,7 @@ export default function GroupOptionsForm({
                 id="disableAi"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
@@ -165,6 +183,7 @@ export default function GroupOptionsForm({
                 id="lockEveryoneAdmin"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
@@ -179,13 +198,14 @@ export default function GroupOptionsForm({
                 id="scheduleCommandWeekly"
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={!isGroupAdmin}
               />
             )}
           />
           <Label htmlFor="scheduleCommandWeekly">Weekly Schedule</Label>
         </div>
       </div>
-      <Button type="submit" disabled={isPending}>
+      <Button type="submit" disabled={isPending || !isGroupAdmin}>
         {isPending ? "Saving..." : "Save Options"}
       </Button>
     </form>

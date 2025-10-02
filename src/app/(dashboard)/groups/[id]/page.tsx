@@ -1,15 +1,22 @@
 import prisma from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import GroupOptionsForm from "@/components/Groups/GroupOptionsForm";
 import ParticipantsManager from "@/components/Groups/ParticipantsManager";
 import ScheduleManager from "@/components/Groups/ScheduleManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { auth } from "@/lib/auth";
+import { Role } from "@prisma/client";
 
 export default async function GroupDetailsPage({
   params,
 }: {
   params: { id: string };
 }) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const group = await prisma.group.findUnique({
     where: { id: params.id },
     include: {
@@ -27,6 +34,10 @@ export default async function GroupDetailsPage({
     return notFound();
   }
 
+  const isGroupAdmin =
+    session.user.role === Role.ADMIN ||
+    group.adminSerializedIds.includes(session.user.serializedId);
+
   return (
     <div className="space-y-8">
       <Card>
@@ -37,10 +48,10 @@ export default async function GroupDetailsPage({
           <GroupOptionsForm
             groupOptions={group.groupOption}
             groupId={group.id}
+            isGroupAdmin={isGroupAdmin}
           />
         </CardContent>
       </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Participants</CardTitle>
@@ -49,10 +60,11 @@ export default async function GroupDetailsPage({
           <ParticipantsManager
             participants={group.groupParticipants}
             groupId={group.id}
+            adminSerializedIds={group.adminSerializedIds}
+            isGroupAdmin={isGroupAdmin}
           />
         </CardContent>
       </Card>
-
       <Card>
         <CardHeader>
           <CardTitle>Scheduler</CardTitle>

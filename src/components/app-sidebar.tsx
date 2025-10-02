@@ -4,7 +4,7 @@ import {
   IconCommand,
   IconGauge,
   IconTrash,
-  // IconUsers,
+  IconUsers,
   IconWorld,
   IconInnerShadowTop,
   IconSettings,
@@ -24,6 +24,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Session } from "next-auth";
 import { ThemeSwitcher } from "./theme-switcher";
+import { Role } from "@prisma/client";
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   user:
@@ -37,14 +38,38 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname();
-  const navMain = [
-    { title: "Dashboard", href: "/", icon: IconGauge },
-    { title: "Commands", href: "/commands", icon: IconCommand },
-    { title: "Deleted Commands", href: "/commands/deleted", icon: IconTrash },
-    { title: "Groups", href: "/groups", icon: IconWorld },
-    // { title: "Users", href: "/users", icon: IconUsers },
-    { title: "System Stats", href: "/system-stats", icon: IconSettings },
+  const allNavItems = [
+    {
+      title: "Dashboard",
+      href: "/",
+      icon: IconGauge,
+      roles: [Role.ADMIN, Role.USER, Role.AWAIT_REGISTER],
+    },
+    {
+      title: "Commands",
+      href: "/commands",
+      icon: IconCommand,
+      roles: [Role.ADMIN, Role.USER, Role.AWAIT_REGISTER],
+    },
+    {
+      title: "Deleted Commands",
+      href: "/commands/deleted",
+      icon: IconTrash,
+      roles: [Role.ADMIN, Role.USER, Role.AWAIT_REGISTER],
+    },
+    { title: "Groups", href: "/groups", icon: IconWorld, roles: [Role.ADMIN] },
+    { title: "Users", href: "/users", icon: IconUsers, roles: [Role.ADMIN] },
+    {
+      title: "System Stats",
+      href: "/system-stats",
+      icon: IconSettings,
+      roles: [Role.ADMIN, Role.USER, Role.AWAIT_REGISTER],
+    },
   ];
+
+  const navMain = allNavItems.filter(
+    (item) => user?.role && item.roles.includes(user.role)
+  );
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>

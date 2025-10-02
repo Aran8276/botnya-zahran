@@ -1,12 +1,13 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Commands } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import CommandActions from "@/components/Commands/CommandActions";
 import { formatDate } from "@/utils/date-formatter";
+import { CommandWithOwner } from "./page";
+import { Role } from "@prisma/client";
 
-export const getColumns = (): ColumnDef<Commands>[] => [
+export const getColumns = (): ColumnDef<CommandWithOwner>[] => [
   {
     accessorKey: "input",
     header: "Input",
@@ -19,6 +20,15 @@ export const getColumns = (): ColumnDef<Commands>[] => [
         {row.original.outputType}
       </Badge>
     ),
+  },
+  {
+    accessorKey: "owner",
+    header: "Owner",
+    cell: ({ row }) => {
+      const owner = row.original.owner;
+      if (!owner) return "-";
+      return owner.role === Role.AWAIT_REGISTER ? "-" : owner.username || "-";
+    },
   },
   {
     accessorKey: "commandUsageCount",

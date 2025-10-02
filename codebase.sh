@@ -23,6 +23,8 @@ find . -type d \( \
     ! -name "yarn-error.log*" \
     ! -name ".pnpm-debug.log*" \
     ! -name ".env" \
+    ! -name "package-lock.json" \
+    ! -name "codebase.sh" \
     ! -name "tree" \
     ! -name "*.tsbuildinfo" \
     ! -name "next-env.d.ts" \

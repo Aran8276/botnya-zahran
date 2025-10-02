@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// src/lib/actions.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 import { revalidatePath } from "next/cache";
@@ -11,16 +13,44 @@ import {
   ScheduleSchema,
 } from "./schemas";
 import * as ivm from "isolated-vm";
+import { auth } from "./auth";
+import { Role } from "@prisma/client";
 
 export async function createCommand(values: z.infer<typeof CommandSchema>) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return { error: "Unauthorized" };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { _count: { select: { ownedCommands: true } } },
+    });
+
+    if (!user) {
+      return { error: "User not found." };
+    }
+
+    if (user.role === Role.AWAIT_REGISTER && user._count.ownedCommands >= 5) {
+      return {
+        error:
+          "Guest users can only create up to 5 commands. Please register for more.",
+      };
+    }
+
+    if (user.role === Role.USER && user._count.ownedCommands >= 25) {
+      return { error: "You have reached the maximum command limit of 25." };
+    }
+
     const validatedFields = CommandSchema.safeParse(values);
 
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
     }
+    const data = { ...validatedFields.data, ownerId: session.user.id };
 
-    await prisma.commands.create({ data: validatedFields.data });
+    await prisma.commands.create({ data });
     revalidatePath("/commands");
     return { success: "Command created successfully." };
   } catch (error) {
@@ -36,6 +66,30 @@ export async function updateCommand(
   values: z.infer<typeof CommandSchema>
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return { error: "Unauthorized" };
+    }
+
+    const command = await prisma.commands.findUnique({
+      where: { id },
+      include: { owner: true },
+    });
+
+    if (!command) {
+      return { error: "Command not found." };
+    }
+
+    const canModify =
+      session.user.role === Role.ADMIN ||
+      !command.owner || // Anyone can edit if there is no owner
+      command.owner?.role === Role.AWAIT_REGISTER || // Anyone can edit if owner is a guest
+      session.user.id === command.ownerId;
+
+    if (!canModify) {
+      return { error: "You don't have permission to edit this command." };
+    }
+
     const validatedFields = CommandSchema.safeParse(values);
     if (!validatedFields.success) {
       return { error: "Invalid fields!" };
@@ -43,6 +97,7 @@ export async function updateCommand(
 
     await prisma.commands.update({ where: { id }, data: validatedFields.data });
     revalidatePath(`/commands`);
+    revalidatePath(`/commands/${id}/edit`);
     return { success: "Command updated successfully." };
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -53,6 +108,30 @@ export async function updateCommand(
 }
 
 export async function softDeleteCommand(id: string) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const command = await prisma.commands.findUnique({
+    where: { id },
+    include: { owner: true },
+  });
+
+  if (!command) {
+    throw new Error("Command not found.");
+  }
+
+  const canModify =
+    session.user.role === Role.ADMIN ||
+    !command.owner || // Anyone can delete if there is no owner
+    command.owner?.role === Role.AWAIT_REGISTER || // Anyone can delete if owner is a guest
+    session.user.id === command.ownerId;
+
+  if (!canModify) {
+    throw new Error("You don't have permission to delete this command.");
+  }
+
   const expiration = new Date();
   expiration.setDate(expiration.getDate() + 30);
   await prisma.commands.update({
@@ -201,7 +280,6 @@ export async function updateGroupOptions(
   console.log((({ groupId, ...rest }) => rest)(validatedFields.data));
   await prisma.groupOptions.update({
     where: { id },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     data: (({ groupId, ...rest }) => rest)(validatedFields.data),
   });
 
@@ -255,4 +333,60 @@ export async function createSchedule(
 export async function deleteSchedule(id: string, groupId: string) {
   await prisma.schedule.delete({ where: { id } });
   revalidatePath(`/groups/${groupId}`);
+}
+
+export async function updateUserRole(id: string, role: Role) {
+  try {
+    await prisma.user.update({
+      where: { id },
+      data: { role },
+    });
+    revalidatePath("/users");
+    return { success: "User role updated." };
+  } catch (error) {
+    return { error: "Failed to update user role." };
+  }
+}
+
+export async function deleteUser(id: string) {
+  try {
+    await prisma.user.delete({
+      where: { id },
+    });
+    revalidatePath("/users");
+    return { success: "User deleted." };
+  } catch (error) {
+    return { error: "Failed to delete user." };
+  }
+}
+
+export async function toggleGroupAdmin(
+  groupId: string,
+  participantSerializedId: string
+) {
+  try {
+    const group = await prisma.group.findUnique({
+      where: { id: groupId },
+      select: { adminSerializedIds: true },
+    });
+
+    if (!group) {
+      return { error: "Group not found." };
+    }
+
+    const isAdmin = group.adminSerializedIds.includes(participantSerializedId);
+    const newAdminIds = isAdmin
+      ? group.adminSerializedIds.filter((id) => id !== participantSerializedId)
+      : [...group.adminSerializedIds, participantSerializedId];
+
+    await prisma.group.update({
+      where: { id: groupId },
+      data: { adminSerializedIds: newAdminIds },
+    });
+
+    revalidatePath(`/groups/${groupId}`);
+    return { success: "Admin status updated." };
+  } catch (error) {
+    return { error: "Failed to update admin status." };
+  }
 }

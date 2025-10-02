@@ -7,17 +7,20 @@ declare module "next-auth" {
     user: {
       id: string;
       role: Role;
+      serializedId: string;
     } & DefaultSession["user"];
   }
 
   interface User extends DefaultUser {
     role: Role;
+    serializedId: string;
   }
 }
 
 declare module "next-auth/adapters" {
   interface AdapterUser extends DefaultAdapterUser {
     role: Role;
+    serializedId: string;
   }
 }
 
@@ -25,5 +28,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     role?: Role;
+    serializedId?: string;
   }
 }
