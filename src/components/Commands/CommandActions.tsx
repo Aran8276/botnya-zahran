@@ -66,16 +66,22 @@ export default function CommandActions({ command }: { command: Commands }) {
             </AlertDialogTrigger>
           </DropdownMenuContent>
         </DropdownMenu>
-        <AlertDialogContent>
+        <AlertDialogContent className="flex flex-col space-y-2">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="pt-[3px]">
               This will move the command to the trash. You can restore it later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/80"
+              asChild
+              onClick={handleDelete}
+            >
+              <Button variant={`destructive`}>Delete</Button>
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

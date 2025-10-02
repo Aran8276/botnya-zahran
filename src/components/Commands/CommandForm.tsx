@@ -18,6 +18,8 @@ import {
 } from "../ui/select";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
+import { Textarea } from "../ui/textarea";
+import { toTitleCase } from "../../../utils/to-title-case";
 
 interface CommandFormProps {
   command?: Commands;
@@ -74,14 +76,17 @@ export default function CommandForm({ command, onSuccess }: CommandFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="flex flex-col max-h-[400px] overflow-scroll space-y-4"
+    >
+      <div className="flex flex-col gap-2">
         <Label htmlFor="input">Input</Label>
         <Input id="input" {...register("input")} />
         {errors.input && <p className="text-red-500">{errors.input.message}</p>}
       </div>
 
-      <div>
+      <div className="flex flex-col gap-2">
         <Label htmlFor="outputType">Output Type</Label>
         <Select
           defaultValue={outputType}
@@ -98,7 +103,7 @@ export default function CommandForm({ command, onSuccess }: CommandFormProps) {
           <SelectContent>
             {Object.values(OutputType).map((type) => (
               <SelectItem key={type} value={type}>
-                {type}
+                {toTitleCase(type)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -106,9 +111,9 @@ export default function CommandForm({ command, onSuccess }: CommandFormProps) {
       </div>
 
       {outputType === "TEXT" && (
-        <div>
+        <div className="flex flex-col gap-2">
           <Label htmlFor="outputText">Output Text</Label>
-          <textarea
+          <Textarea
             id="outputText"
             {...register("outputText")}
             className="w-full bg-transparent border border-input rounded-md p-2"
@@ -116,13 +121,13 @@ export default function CommandForm({ command, onSuccess }: CommandFormProps) {
         </div>
       )}
       {outputType === "IMAGE" && (
-        <div>
+        <div className="flex flex-col gap-2">
           <Label htmlFor="outputImageUrl">Output Image URL</Label>
           <Input id="outputImageUrl" {...register("outputImageUrl")} />
         </div>
       )}
       {outputType === "INBUILT_COMMAND" && (
-        <div>
+        <div className="flex flex-col gap-2">
           <Label htmlFor="outputInbuiltCommand">Inbuilt Command</Label>
           <Input
             id="outputInbuiltCommand"
@@ -131,9 +136,9 @@ export default function CommandForm({ command, onSuccess }: CommandFormProps) {
         </div>
       )}
       {outputType === "JAVASCRIPT" && (
-        <div>
-          <Label htmlFor="outputJavascript">Javascript Code</Label>
-          <textarea
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="outputJavascript">JavaScript Code</Label>
+          <Textarea
             id="outputJavascript"
             rows={10}
             {...register("outputJavascript")}

@@ -6,16 +6,16 @@ import { useState } from "react";
 
 export default function JSExecutor({ code }: { code: string }) {
   const [result, setResult] = useState<any>(null);
-  const [logs, setLogs] = useState<any[]>([]);
+  // const [logs, setLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRun = async () => {
     setIsLoading(true);
     setResult(null);
-    setLogs([]);
-    const { result, logs } = await executeJavascript(code);
+    // setLogs([]);
+    const { result /*logs*/ } = await executeJavascript(code);
+    // setLogs(logs);
     setResult(result);
-    setLogs(logs);
     setIsLoading(false);
   };
 
@@ -35,14 +35,14 @@ export default function JSExecutor({ code }: { code: string }) {
         <pre className="mt-2 text-sm whitespace-pre-wrap">
           {JSON.stringify(result, null, 2)}
         </pre>
-        <h4 className="font-semibold mt-4">Console Logs:</h4>
+        {/* <h4 className="font-semibold mt-4">Console Logs:</h4>
         <div className="mt-2 text-sm space-y-1">
           {logs.map((log, i) => (
             <pre key={i} className="whitespace-pre-wrap">
               {log.map((arg: any) => JSON.stringify(arg, null, 2)).join(" ")}
             </pre>
           ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );
