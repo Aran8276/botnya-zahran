@@ -27,8 +27,8 @@ export const getColumns = (): ColumnDef<Group>[] => [
     header: "Admin IDs",
     cell: ({ row }) => (
       <div className="flex flex-wrap gap-1">
-        {row.original.adminSerializedIds.map((id) => (
-          <Badge key={id} variant="secondary">
+        {row.original.adminSerializedIds.map((id, index) => (
+          <Badge key={index} variant="secondary">
             {id}
           </Badge>
         ))}

@@ -4,6 +4,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Commands } from "@prisma/client";
 import DeletedCommandActions from "@/components/Commands/DeletedCommandActions";
+import { formatDate } from "@/utils/date-formatter";
 
 export const getColumns = (): ColumnDef<Commands>[] => [
   {
@@ -14,14 +15,19 @@ export const getColumns = (): ColumnDef<Commands>[] => [
     accessorKey: "deletedAt",
     header: "Deleted At",
     cell: ({ row }) => (
-      <span>{row.original.deletedAt?.toLocaleString()}</span>
+      <span>
+        {row.original.deletedAt && formatDate(row.original.deletedAt)}
+      </span>
     ),
   },
   {
     accessorKey: "deletedAtExpiration",
     header: "Expires At",
     cell: ({ row }) => (
-      <span>{row.original.deletedAtExpiration?.toLocaleString()}</span>
+      <span>
+        {row.original.deletedAtExpiration &&
+          formatDate(row.original.deletedAtExpiration)}
+      </span>
     ),
   },
   {

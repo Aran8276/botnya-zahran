@@ -19,7 +19,7 @@ import {
 import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { Textarea } from "../ui/textarea";
-import { toTitleCase } from "../../../utils/to-title-case";
+import { toTitleCase } from "@/utils/to-title-case";
 
 interface CommandFormProps {
   command?: Commands;
