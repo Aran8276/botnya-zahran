@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { GroupOptionsSchema } from "@/lib/schemas";
 import { updateGroupOptions } from "@/lib/actions";
-import { GroupOptions } from "@/generated/prisma/client";
+import { GroupOptions } from "@prisma/client";
 import { useTransition } from "react";
 
 interface GroupOptionsFormProps {

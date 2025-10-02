@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OutputType, ScheduleType } from "@/generated/prisma/client";
+import { OutputType, ScheduleType } from "@prisma/client";
 
 export const LoginSchema = z.object({
   username: z.string().min(1, "Username is required"),

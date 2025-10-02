@@ -1,6 +1,6 @@
 "use client";
 
-import { GroupScheduler, Schedule } from "@/generated/prisma/client";
+import { GroupScheduler, Schedule } from "@prisma/client";
 import { deleteSchedule } from "@/lib/actions";
 import ScheduleForm from "./ScheduleForm";
 

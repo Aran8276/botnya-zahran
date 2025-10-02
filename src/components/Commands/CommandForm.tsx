@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CommandSchema } from "@/lib/schemas";
 import { createCommand, updateCommand } from "@/lib/actions";
-import { Commands, OutputType } from "@/generated/prisma/client";
+import { Commands, OutputType } from "@prisma/client";
 import { useTransition } from "react";
 import JSExecutor from "./JSExecutor";
 
@@ -66,7 +66,11 @@ export default function CommandForm({ command }: CommandFormProps) {
 
       <div>
         <label htmlFor="outputType">Output Type</label>
-        <select id="outputType" {...register("outputType")} className="w-full">
+        <select
+          id="outputType"
+          {...register("outputType")}
+          className="w-full text-black"
+        >
           {Object.values(OutputType).map((type) => (
             <option key={type} value={type}>
               {type}

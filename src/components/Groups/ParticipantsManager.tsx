@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { GroupParticipantSchema } from "@/lib/schemas";
 import { createParticipant, deleteParticipant } from "@/lib/actions";
-import { GroupParticipants } from "@/generated/prisma/client";
+import { GroupParticipants } from "@prisma/client";
 import { useTransition } from "react";
 
 interface ParticipantsManagerProps {

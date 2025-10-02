@@ -1,4 +1,4 @@
-import { Role } from "@/generated/prisma/client";
+import { Role } from "@prisma/client";
 import { type DefaultSession, User as DefaultUser } from "next-auth";
 import { AdapterUser as DefaultAdapterUser } from "next-auth/adapters";
 

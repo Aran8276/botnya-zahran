@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ScheduleSchema } from "@/lib/schemas";
 import { createSchedule } from "@/lib/actions";
-import { ScheduleType } from "@/generated/prisma/client";
+import { ScheduleType } from "@prisma/client";
 import { useTransition } from "react";
 
 interface ScheduleFormProps {
