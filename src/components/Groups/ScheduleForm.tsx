@@ -10,6 +10,7 @@ import { ScheduleSchema } from "@/lib/schemas";
 import { createSchedule } from "@/lib/actions";
 import { ScheduleType } from "@prisma/client";
 import { useTransition } from "react";
+import { toTitleCase } from "@/utils/to-title-case";
 
 interface ScheduleFormProps {
   groupSchedulerId: string;
@@ -71,7 +72,7 @@ export default function ScheduleForm({
         <select id="scheduleType" {...register("scheduleType")}>
           {Object.values(ScheduleType).map((type) => (
             <option key={type} value={type}>
-              {type}
+              {toTitleCase(type)}
             </option>
           ))}
         </select>

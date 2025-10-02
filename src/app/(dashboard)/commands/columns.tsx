@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Commands } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import CommandActions from "@/components/Commands/CommandActions";
+import { formatDate } from "@/utils/date-formatter";
 
 export const getColumns = (): ColumnDef<Commands>[] => [
   {
@@ -23,6 +24,15 @@ export const getColumns = (): ColumnDef<Commands>[] => [
   {
     accessorKey: "commandUsageCount",
     header: "Usage Count",
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Created At",
+    cell: ({ row }) => (
+      <span>
+        {row.original.createdAt && formatDate(row.original.createdAt)}
+      </span>
+    ),
   },
   {
     id: "actions",

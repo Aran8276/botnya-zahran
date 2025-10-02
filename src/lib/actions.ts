@@ -198,9 +198,12 @@ export async function updateGroupOptions(
   if (!validatedFields.success) {
     throw new Error("Invalid fields!");
   }
+
+  console.log((({ groupId, ...rest }) => rest)(validatedFields.data));
   await prisma.groupOptions.update({
     where: { id },
-    data: validatedFields.data,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    data: (({ groupId, ...rest }) => rest)(validatedFields.data),
   });
 
   revalidatePath(`/groups/${values.groupId}`);

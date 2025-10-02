@@ -1,7 +1,7 @@
 // src/components/Groups/GroupOptionsForm.tsx
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { GroupOptionsSchema } from "@/lib/schemas";
@@ -24,7 +24,7 @@ export default function GroupOptionsForm({
   groupId,
 }: GroupOptionsFormProps) {
   const [isPending, startTransition] = useTransition();
-  const { register, handleSubmit } = useForm<
+  const { register, handleSubmit, control } = useForm<
     z.infer<typeof GroupOptionsSchema>
   >({
     resolver: zodResolver(GroupOptionsSchema),
@@ -60,53 +60,128 @@ export default function GroupOptionsForm({
       </div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="enableWelcomeMessage"
-            {...register("enableWelcomeMessage")}
+          <Controller
+            name="enableWelcomeMessage"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="enableWelcomeMessage"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
           />
           <Label htmlFor="enableWelcomeMessage">Welcome Message</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="enableGoodbyeMessage"
-            {...register("enableGoodbyeMessage")}
+          <Controller
+            name="enableGoodbyeMessage"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="enableGoodbyeMessage"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
           />
           <Label htmlFor="enableGoodbyeMessage">Goodbye Message</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox id="disableEveryone" {...register("disableEveryone")} />
+          <Controller
+            name="disableEveryone"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="disableEveryone"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
           <Label htmlFor="disableEveryone">Disable @everyone</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox id="disableUnoGame" {...register("disableUnoGame")} />
+          <Controller
+            name="disableUnoGame"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="disableUnoGame"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
           <Label htmlFor="disableUnoGame">Disable Uno</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="disableBlackjackGame"
-            {...register("disableBlackjackGame")}
+          <Controller
+            name="disableBlackjackGame"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="disableBlackjackGame"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
           />
           <Label htmlFor="disableBlackjackGame">Disable Blackjack</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="disableMarbleRunGame"
-            {...register("disableMarbleRunGame")}
+          <Controller
+            name="disableMarbleRunGame"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="disableMarbleRunGame"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
           />
           <Label htmlFor="disableMarbleRunGame">Disable Marble Run</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox id="disableAi" {...register("disableAi")} />
+          <Controller
+            name="disableAi"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="disableAi"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
           <Label htmlFor="disableAi">Disable AI</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox id="lockEveryoneAdmin" {...register("lockEveryoneAdmin")} />
+          <Controller
+            name="lockEveryoneAdmin"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="lockEveryoneAdmin"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
           <Label htmlFor="lockEveryoneAdmin">Lock @everyone to Admin</Label>
         </div>
         <div className="flex items-center gap-2">
-          <Checkbox
-            id="scheduleCommandWeekly"
-            {...register("scheduleCommandWeekly")}
+          <Controller
+            name="scheduleCommandWeekly"
+            control={control}
+            render={({ field }) => (
+              <Checkbox
+                id="scheduleCommandWeekly"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
           />
           <Label htmlFor="scheduleCommandWeekly">Weekly Schedule</Label>
         </div>

@@ -29,6 +29,8 @@ import {
 } from "../ui/select";
 import { IconTrash } from "@tabler/icons-react";
 import { Label } from "../ui/label";
+import { toTitleCase } from "@/utils/to-title-case";
+import { formatDateBasic, formatTime } from "@/utils/date-formatter";
 
 type SchedulerWithSchedules = GroupScheduler & { schedules: Schedule[] };
 
@@ -129,7 +131,7 @@ export default function ScheduleManager({
             <SelectContent>
               {Object.values(ScheduleType).map((type) => (
                 <SelectItem key={type} value={type}>
-                  {type}
+                  {toTitleCase(type)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -152,8 +154,12 @@ export default function ScheduleManager({
           <TableBody>
             {scheduler.schedules.map((s) => (
               <TableRow key={s.id}>
-                <TableCell>{s.triggerAt.toLocaleString()}</TableCell>
-                <TableCell>{s.scheduleType}</TableCell>
+                <TableCell>
+                  {s.scheduleType === "ONCE"
+                    ? formatDateBasic(s.triggerAt)
+                    : formatTime(s.triggerAt)}
+                </TableCell>
+                <TableCell>{toTitleCase(s.scheduleType)}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"

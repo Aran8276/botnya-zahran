@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/Groups/GroupForm.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { GroupSchema } from "@/lib/schemas";
@@ -29,6 +29,7 @@ export default function GroupForm({ group, onSuccess }: GroupFormProps) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<GroupFormInput>({
     resolver: zodResolver(GroupSchema),
@@ -71,7 +72,17 @@ export default function GroupForm({ group, onSuccess }: GroupFormProps) {
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox id="isIgnored" {...register("isIgnored")} />
+        <Controller
+          name="isIgnored"
+          control={control}
+          render={({ field }) => (
+            <Checkbox
+              id="isIgnored"
+              checked={field.value}
+              onCheckedChange={field.onChange}
+            />
+          )}
+        />
         <label
           htmlFor="isIgnored"
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

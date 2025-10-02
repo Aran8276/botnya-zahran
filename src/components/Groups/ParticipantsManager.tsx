@@ -91,16 +91,16 @@ export default function ParticipantsManager({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Push Name</TableHead>
               <TableHead>Serialized ID</TableHead>
+              <TableHead>Push Name</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {participants.map((p) => (
               <TableRow key={p.id}>
-                <TableCell>{p.pushName}</TableCell>
                 <TableCell>{p.serializedId}</TableCell>
+                <TableCell>{p.pushName}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"

@@ -31,6 +31,15 @@ export const getColumns = (): ColumnDef<Commands>[] => [
     ),
   },
   {
+    accessorKey: "createdAt",
+    header: "Created At",
+    cell: ({ row }) => (
+      <span>
+        {row.original.createdAt && formatDate(row.original.createdAt)}
+      </span>
+    ),
+  },
+  {
     id: "actions",
     cell: ({ row }) => <DeletedCommandActions command={row.original} />,
   },
