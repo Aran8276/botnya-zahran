@@ -1,5 +1,10 @@
-import { auth, signOut } from "@/lib/auth";
-import Link from "next/link";
+import * as React from "react";
+import { auth } from "@/lib/auth";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
+import { Session } from "next-auth";
 
 export default async function DashboardLayout({
   children,
@@ -9,41 +14,28 @@ export default async function DashboardLayout({
   const session = await auth();
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-64 bg-gray-100 dark:bg-gray-800 p-4 flex flex-col">
-        <h1 className="text-2xl font-bold mb-8">Dashboard</h1>
-        <nav className="flex flex-col space-y-2">
-          <Link href="/commands" className="hover:underline">
-            Commands
-          </Link>
-          <Link href="/commands/deleted" className="hover:underline">
-            Deleted Commands
-          </Link>
-          <Link href="/groups" className="hover:underline">
-            Groups
-          </Link>
-          <Link href="/system-stats" className="hover:underline">
-            System Stats
-          </Link>
-        </nav>
-        <div className="mt-auto">
-          <p className="text-sm">Signed in as {session?.user?.name}</p>
-          <form
-            action={async () => {
-              "use server";
-              await signOut();
-            }}
-          >
-            <button
-              type="submit"
-              className="w-full text-left mt-2 hover:underline"
-            >
-              Sign Out
-            </button>
-          </form>
-        </div>
-      </aside>
-      <main className="flex-1 p-8 bg-white dark:bg-gray-900">{children}</main>
-    </div>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar
+        user={
+          session?.user as Session["user"] & {
+            name?: string;
+            email?: string;
+            image?: string;
+          }
+        }
+      />
+      <SidebarInset>
+        <SiteHeader />
+        <main className="flex-1 p-8 bg-background">{children}</main>
+        <Toaster />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

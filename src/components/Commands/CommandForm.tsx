@@ -1,5 +1,4 @@
 "use client";
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,17 +7,30 @@ import { createCommand, updateCommand } from "@/lib/actions";
 import { Commands, OutputType } from "@prisma/client";
 import { useTransition } from "react";
 import JSExecutor from "./JSExecutor";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Button } from "../ui/button";
+import { toast } from "sonner";
 
 interface CommandFormProps {
   command?: Commands;
+  onSuccess?: () => void;
 }
 
-export default function CommandForm({ command }: CommandFormProps) {
+export default function CommandForm({ command, onSuccess }: CommandFormProps) {
   const [isPending, startTransition] = useTransition();
   const {
     register,
     handleSubmit,
     watch,
+    control,
     formState: { errors },
   } = useForm<z.infer<typeof CommandSchema>>({
     resolver: zodResolver(CommandSchema),
@@ -30,7 +42,7 @@ export default function CommandForm({ command }: CommandFormProps) {
           outputInbuiltCommand: command.outputInbuiltCommand ?? "",
           outputJavascript:
             command.outputJavascript ??
-            "function doCommand() {\n  // your code here\n  return 'Hello, World!';\n}",
+            "function doCommand() {\n // your code here\n return 'Hello, World!';\n}",
           ownerId: command.ownerId ?? undefined,
         }
       : {
@@ -40,98 +52,96 @@ export default function CommandForm({ command }: CommandFormProps) {
           outputImageUrl: "",
           outputInbuiltCommand: "",
           outputJavascript:
-            "function doCommand() {\n  // your code here\n  return 'Hello, World!';\n}",
+            "function doCommand() {\n // your code here\n return 'Hello, World!';\n}",
         },
   });
 
   const outputType = watch("outputType");
 
   const onSubmit = (data: z.infer<typeof CommandSchema>) => {
-    startTransition(() => {
-      if (command) {
-        updateCommand(command.id, data);
+    startTransition(async () => {
+      const action = command
+        ? updateCommand(command.id, data)
+        : createCommand(data);
+      const result = await action;
+      if (result.error) {
+        toast.error(result.error);
       } else {
-        createCommand(data);
+        toast.success(result.success);
+        onSuccess?.();
       }
     });
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-lg">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
-        <label htmlFor="input">Input</label>
-        <input id="input" {...register("input")} className="w-full" />
+        <Label htmlFor="input">Input</Label>
+        <Input id="input" {...register("input")} />
         {errors.input && <p className="text-red-500">{errors.input.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="outputType">Output Type</label>
-        <select
-          id="outputType"
-          {...register("outputType")}
-          className="w-full text-black"
+        <Label htmlFor="outputType">Output Type</Label>
+        <Select
+          defaultValue={outputType}
+          onValueChange={(value) =>
+            control._form.setValue("outputType", value as OutputType)
+          }
         >
-          {Object.values(OutputType).map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.values(OutputType).map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {outputType === "TEXT" && (
         <div>
-          <label htmlFor="outputText">Output Text</label>
+          <Label htmlFor="outputText">Output Text</Label>
           <textarea
             id="outputText"
             {...register("outputText")}
-            className="w-full"
+            className="w-full bg-transparent border border-input rounded-md p-2"
           />
         </div>
       )}
-
       {outputType === "IMAGE" && (
         <div>
-          <label htmlFor="outputImageUrl">Output Image URL</label>
-          <input
-            id="outputImageUrl"
-            {...register("outputImageUrl")}
-            className="w-full"
-          />
+          <Label htmlFor="outputImageUrl">Output Image URL</Label>
+          <Input id="outputImageUrl" {...register("outputImageUrl")} />
         </div>
       )}
-
       {outputType === "INBUILT_COMMAND" && (
         <div>
-          <label htmlFor="outputInbuiltCommand">Inbuilt Command</label>
-          <input
+          <Label htmlFor="outputInbuiltCommand">Inbuilt Command</Label>
+          <Input
             id="outputInbuiltCommand"
             {...register("outputInbuiltCommand")}
-            className="w-full"
           />
         </div>
       )}
-
       {outputType === "JAVASCRIPT" && (
         <div>
-          <label htmlFor="outputJavascript">Javascript Code</label>
+          <Label htmlFor="outputJavascript">Javascript Code</Label>
           <textarea
             id="outputJavascript"
             rows={10}
             {...register("outputJavascript")}
-            className="w-full font-mono"
+            className="w-full font-mono bg-transparent border border-input rounded-md p-2"
           />
           <JSExecutor code={watch("outputJavascript") || ""} />
         </div>
       )}
-
-      <button
-        type="submit"
-        disabled={isPending}
-        className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50"
-      >
+      <Button type="submit" disabled={isPending} className="w-full">
         {isPending ? "Saving..." : "Save Command"}
-      </button>
+      </Button>
     </form>
   );
 }
